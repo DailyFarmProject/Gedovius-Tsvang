@@ -3,7 +3,6 @@ package dailyfarm.accounting.entity;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,7 +31,7 @@ public abstract class UserAccount {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
-    private Set<String> roles = new HashSet<>();
+    private HashSet<String> roles = new HashSet<>();
 
     @Column(nullable = false)
     private LocalDateTime activationDate = LocalDateTime.now();
