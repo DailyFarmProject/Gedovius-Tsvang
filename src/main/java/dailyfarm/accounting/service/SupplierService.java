@@ -1,8 +1,8 @@
 package dailyfarm.accounting.service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -87,13 +87,13 @@ public class SupplierService implements ISupplierManagement {
 		if (encoder.matches(newPassword, farmer.getHash()))
 			throw new PasswordNotValidException(newPassword);
 
-		LinkedList<String> lastHash = farmer.getLastHash();
+		List<String> lastHash = farmer.getLastHash();
 		if (isPasswordFromLast(newPassword, lastHash)) {
 			throw new PasswordNotValidException(newPassword);
 		}
 
 		if (lastHash.size() == n_last_hash)
-			lastHash.removeFirst();
+			lastHash.remove(0);
 		lastHash.add(farmer.getHash());
 		farmer.setHash(encoder.encode(newPassword));
 		farmer.setActivationDate(LocalDateTime.now());
@@ -101,10 +101,10 @@ public class SupplierService implements ISupplierManagement {
 		return true;
 	}
 
-	private boolean isPasswordFromLast(String newPassword, LinkedList<String> lastHash) {
-		return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
-
+	private boolean isPasswordFromLast(String newPassword, List<String> lastHash) {
+	    return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
 	}
+
 
 	@Transactional
 	@Override
@@ -169,7 +169,7 @@ public class SupplierService implements ISupplierManagement {
 	public boolean addRole(String login, String role) {
 		SupplierAccount farmer = getSupplierAccount(login);
 
-		HashSet<String> roles = farmer.getRoles();
+		Set<String> roles = farmer.getRoles();
 		if (roles.contains(role))
 			throw new RoleExistsException(role);
 		roles.add(role);
@@ -183,7 +183,7 @@ public class SupplierService implements ISupplierManagement {
 	public boolean removeRole(String login, String role) {
 		SupplierAccount farmer = getSupplierAccount(login);
 
-		HashSet<String> roles = farmer.getRoles();
+		Set<String> roles = farmer.getRoles();
 		if (!roles.contains(role))
 			throw new RoleNotExistsException(role);
 		roles.remove(role);

@@ -26,19 +26,30 @@ public class CustomerAccount extends UserAccount {
 
     @Column(nullable = false, length = 20)
     private String phone;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "customer_roles", joinColumns = @JoinColumn(name = "customer_id"))
+    @Column(name = "role")
+    private Set<String> roles = new HashSet<>();
 
     @ManyToMany
     @JoinTable(name = "customer_supplier",
             joinColumns = @JoinColumn(name = "customer_id"),
             inverseJoinColumns = @JoinColumn(name = "supplier_id"))
     private Set<SupplierAccount> suppliers = new HashSet<>();
+    
+    @Override
+    public Set<String> getRoles() {
+        return roles;
+    }
 
     public CustomerAccount(String login, String hash, String email, String firstName, String lastName, String address, String phone) {
-        super(login, hash, email, "CUSTOMER");
+        super(login, hash, email);
         this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
         this.phone = phone;
+        this.roles.add("CUSTOMER");
     }
 
     public static CustomerAccount of(CustomerRequestDto dto) {

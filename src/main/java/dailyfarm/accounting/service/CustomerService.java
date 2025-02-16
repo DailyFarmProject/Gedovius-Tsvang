@@ -1,8 +1,8 @@
 package dailyfarm.accounting.service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -87,13 +87,13 @@ public class CustomerService implements ICustomerManagement {
 		if (encoder.matches(newPassword, client.getHash()))
 			throw new PasswordNotValidException(newPassword);
 
-		LinkedList<String> lastHash = client.getLastHash();
+		List<String> lastHash = client.getLastHash();
 		if (isPasswordFromLast(newPassword, lastHash)) {
 			throw new PasswordNotValidException(newPassword);
 		}
 
 		if (lastHash.size() == n_last_hash)
-			lastHash.removeFirst();
+			lastHash.remove(0);
 		lastHash.add(client.getHash());
 		client.setHash(encoder.encode(newPassword));
 		client.setActivationDate(LocalDateTime.now());
@@ -101,10 +101,10 @@ public class CustomerService implements ICustomerManagement {
 		return true;
 	}
 
-	private boolean isPasswordFromLast(String newPassword, LinkedList<String> lastHash) {
-		return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
-
+	private boolean isPasswordFromLast(String newPassword, List<String> lastHash) {
+	    return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
 	}
+
 
 	@Transactional
 	@Override
@@ -165,7 +165,7 @@ public class CustomerService implements ICustomerManagement {
 	public boolean addRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
 
-		HashSet<String> roles = client.getRoles();
+		Set<String> roles = client.getRoles();
 		if (roles.contains(role))
 			throw new RoleExistsException(role);
 		roles.add(role);
@@ -178,7 +178,7 @@ public class CustomerService implements ICustomerManagement {
 	public boolean removeRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
 		
-		HashSet<String> roles = client.getRoles();
+		Set<String> roles = client.getRoles();
 		if (!roles.contains(role))
 			throw new RoleNotExistsException(role);
 		roles.remove(role);

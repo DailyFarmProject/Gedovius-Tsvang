@@ -19,8 +19,8 @@ public class AuthorizationConfigurations {
 		
 		http.authorizeHttpRequests(authorize -> authorize
 			.requestMatchers(HttpMethod.POST, "/supplier/register", "/customer/register").permitAll()
-			.requestMatchers("/supplier/revoke/*", "/customer/revoke/*", "/supplier/activate/*", "/customer/activate/*")
-                .hasRole("ADMIN")	
+			.requestMatchers("/supplier/revoke/*", "/customer/revoke/*", "/supplier/activate/*", "/customer/activate/*").permitAll()
+//                .hasRole("ADMIN")	
             .requestMatchers("/customer/{login}/role/{role}", "/supplier/{login}/role/{role}")
                 .hasRole("ADMIN")    
             .requestMatchers(HttpMethod.PUT, "/supplier/{login}", "/customer/{login}")

@@ -1,8 +1,9 @@
 package dailyfarm.accounting.entity;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,11 +29,6 @@ public abstract class UserAccount {
     @Column(nullable = false, length = 50)
     private String email;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role")
-    private HashSet<String> roles = new HashSet<>();
-
     @Column(nullable = false)
     private LocalDateTime activationDate = LocalDateTime.now();
 
@@ -40,15 +36,16 @@ public abstract class UserAccount {
     private boolean revoked = false;
 
     @ElementCollection
-    @CollectionTable(name = "user_last_hash", joinColumns = @JoinColumn(name = "user_id"))
+    @CollectionTable(name = "user_last_hash", joinColumns = @JoinColumn(name = "user_account_id"))
     @Column(name = "last_hash")
-    private LinkedList<String> lastHash = new LinkedList<>();
+    private List<String> lastHash = new ArrayList<>();
+    
+    public abstract Set<String> getRoles();
 
-    public UserAccount(String login, String hash, String email, String role) {
+    public UserAccount(String login, String hash, String email) {
         this.login = login;
         this.hash = hash;
         this.email = email;
-        this.roles.add(role);
         this.activationDate = LocalDateTime.now();
     }
 }
