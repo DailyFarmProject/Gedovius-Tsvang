@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +26,8 @@ import dailyfarm.accounting.repository.CustomerRepository;
 import jakarta.transaction.Transactional;
 @Service
 public class CustomerService implements ICustomerManagement {
+
+	private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
 
 	@Autowired
 	CustomerRepository repo;
@@ -51,6 +55,10 @@ public class CustomerService implements ICustomerManagement {
 		CustomerAccount client = CustomerAccount.of(user);
 		client.setHash(hashedPassword);
 
+		log.info("Saving new customer: {}", client);
+		client = repo.save(client);
+		log.info("Customer saved successfully: {}", client.getLogin());
+		
 		return CustomerResponseDto.build(client);
 	}
 

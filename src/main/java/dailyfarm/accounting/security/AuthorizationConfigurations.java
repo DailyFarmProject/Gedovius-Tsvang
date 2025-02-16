@@ -12,27 +12,27 @@ import org.springframework.security.web.access.expression.WebExpressionAuthoriza
 @Configuration
 public class AuthorizationConfigurations {
 
-	@Bean
-	SecurityFilterChain configure(HttpSecurity http) throws Exception {
-		http.httpBasic(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
-		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-		
-		http.authorizeHttpRequests(authorize -> authorize
-			.requestMatchers(HttpMethod.POST, "/supplier/register", "/customer/register").permitAll()
-			.requestMatchers("/supplier/revoke/*", "/customer/revoke/*", "/supplier/activate/*", "/customer/activate/*").permitAll()
-//                .hasRole("ADMIN")	
+    @Bean
+    SecurityFilterChain configure(HttpSecurity http) throws Exception {
+        http.httpBasic(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        http.authorizeHttpRequests(authorize -> authorize
+            .requestMatchers(HttpMethod.POST, "/supplier/register", "/customer/register").permitAll()
+            .requestMatchers("/supplier/revoke/*", "/customer/revoke/*", "/supplier/activate/*", "/customer/activate/*")
+                .hasRole("ADMIN")
             .requestMatchers("/customer/{login}/role/{role}", "/supplier/{login}/role/{role}")
                 .hasRole("ADMIN")    
             .requestMatchers(HttpMethod.PUT, "/supplier/{login}", "/customer/{login}")
-                .access(new WebExpressionAuthorizationManager("#login == authentication.name"))
-            .requestMatchers(HttpMethod.DELETE, "/supplier/{login}", "/customer/{login}")
                 .access(new WebExpressionAuthorizationManager("#login == authentication.name or hasRole('ADMIN')"))
+            .requestMatchers(HttpMethod.DELETE, "/supplier/{login}", "/customer/{login}")
+                .hasRole("ADMIN")
             .requestMatchers(HttpMethod.GET, "/supplier/{login}", "/customer/{login}")
                 .access(new WebExpressionAuthorizationManager("#login == authentication.name or hasRole('ADMIN')"))
             .requestMatchers(HttpMethod.PUT, "/customer/password", "/supplier/password")
                 .authenticated()
             .anyRequest().authenticated());
-                
-		return http.build();
-	}
+
+        return http.build();
+    }
 }
