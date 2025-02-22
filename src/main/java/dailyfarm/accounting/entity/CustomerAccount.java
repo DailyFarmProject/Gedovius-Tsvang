@@ -55,12 +55,12 @@ public class CustomerAccount extends UserAccount {
     public static CustomerAccount of(CustomerRequestDto dto) {
         return new CustomerAccount(
                 dto.login(),
+                null,
                 dto.email(),
                 dto.firstName(),
                 dto.lastName(),
                 dto.address(),
-                dto.phone(),
-                dto.email()
+                dto.phone()
         );
     }
 }

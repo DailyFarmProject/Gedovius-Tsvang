@@ -56,13 +56,13 @@ public class SupplierAccount extends UserAccount {
     public static SupplierAccount of(SupplierRequestDto dto) {
         return new SupplierAccount(
                 dto.login(),
+               null,
                 dto.email(),
                 dto.companyName(),
                 dto.companyAddress(),
                 dto.taxId(),
                 dto.contactPerson(),
-                dto.phone(),
-                dto.email()
+                dto.phone()
         );
     }
 }
