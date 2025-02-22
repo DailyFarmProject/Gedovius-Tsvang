@@ -10,9 +10,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import dailyfarm.accounting.entity.AdminAccount;
 import dailyfarm.accounting.entity.CustomerAccount;
 import dailyfarm.accounting.entity.SupplierAccount;
 import dailyfarm.accounting.entity.UserAccount;
+import dailyfarm.accounting.repository.AdminRepository;
 import dailyfarm.accounting.repository.CustomerRepository;
 import dailyfarm.accounting.repository.SupplierRepository;
 
@@ -25,22 +27,31 @@ public class AuthenticationConfiguration implements UserDetailsService {
 	@Autowired
 	private SupplierRepository supplierRepo;
 
+	@Autowired
+	private AdminRepository adminRepo; 
+
 	@Override
 	public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
+		Optional<AdminAccount> admin = adminRepo.findByLogin(login);
+		if (admin.isPresent()) {
+			return buildUserDetails(admin.get());
+		}
+
 		Optional<CustomerAccount> customer = customerRepo.findByLogin(login);
 		if (customer.isPresent()) {
 			return buildUserDetails(customer.get());
 		}
+
 		Optional<SupplierAccount> supplier = supplierRepo.findByLogin(login);
 		if (supplier.isPresent()) {
 			return buildUserDetails(supplier.get());
 		}
+
 		throw new UsernameNotFoundException("User not found: " + login);
 	}
-	
+
 	private UserDetails buildUserDetails(UserAccount user) {
-	    String password = user.getHash();
-	   
-	    return new User(user.getLogin(), password, AuthorityUtils.createAuthorityList(user.getRoles()));
+		return new User(user.getLogin(), user.getHash(),
+				AuthorityUtils.createAuthorityList(user.getRoles().toArray(new String[0])));
 	}
 }

@@ -1,26 +1,23 @@
 package dailyfarm.accounting.entity;
 
-
+import jakarta.persistence.Entity;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import java.util.Collections;
 import java.util.Set;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-
+@Getter
+@NoArgsConstructor
 @Entity
-@Table(name = "admins")
 public class AdminAccount extends UserAccount {
-
+    
+    public AdminAccount(String login, String hash, String email) {
+        super(login, hash, email);
+    }
+    
     @Override
     public Set<String> getRoles() {
         return Collections.singleton("ROLE_ADMIN");
     }
-
-    public AdminAccount(String login, String hash, String email) {
-    	super(login, hash, email);
-    }
-
-    public AdminAccount() {
-        super();
-    }
 }
+
