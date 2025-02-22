@@ -40,9 +40,7 @@ public class AuthenticationConfiguration implements UserDetailsService {
 	
 	private UserDetails buildUserDetails(UserAccount user) {
 	    String password = user.getHash();
-	    String[] roles = user.getRoles().stream()
-	                         .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-	                         .toArray(String[]::new);
-	    return new User(user.getLogin(), password, AuthorityUtils.createAuthorityList(roles));
+	   
+	    return new User(user.getLogin(), password, AuthorityUtils.createAuthorityList(user.getRoles()));
 	}
 }

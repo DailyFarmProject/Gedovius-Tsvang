@@ -1,6 +1,5 @@
 package dailyfarm.accounting.entity;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -12,7 +11,8 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@MappedSuperclass
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class UserAccount {
 
     @Id
@@ -30,9 +30,6 @@ public abstract class UserAccount {
     private String email;
 
     @Column(nullable = false)
-    private LocalDateTime activationDate = LocalDateTime.now();
-
-    @Column(nullable = false)
     private boolean revoked = false;
 
     @ElementCollection
@@ -46,6 +43,6 @@ public abstract class UserAccount {
         this.login = login;
         this.hash = hash;
         this.email = email;
-        this.activationDate = LocalDateTime.now();
+        
     }
 }

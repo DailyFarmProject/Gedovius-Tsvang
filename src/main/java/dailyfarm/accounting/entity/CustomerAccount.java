@@ -4,8 +4,11 @@ import dailyfarm.accounting.dto.CustomerRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 
 @Getter
 @Setter
@@ -38,9 +41,14 @@ public class CustomerAccount extends UserAccount {
             inverseJoinColumns = @JoinColumn(name = "supplier_id"))
     private Set<SupplierAccount> suppliers = new HashSet<>();
     
+    @Column(nullable = false)
+    private LocalDateTime activationDate = LocalDateTime.now();
+    
     @Override
     public Set<String> getRoles() {
-        return roles;
+        return roles.stream()
+                    .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                    .collect(Collectors.toSet());
     }
 
     public CustomerAccount(String login, String hash, String email, String firstName, String lastName, String address, String phone) {
@@ -49,7 +57,10 @@ public class CustomerAccount extends UserAccount {
         this.lastName = lastName;
         this.address = address;
         this.phone = phone;
-        this.roles.add("CUSTOMER");
+        this.roles.add("ROLE_CUSTOMER");
+        this.activationDate = LocalDateTime.now();
+        
+        
     }
 
     public static CustomerAccount of(CustomerRequestDto dto) {
