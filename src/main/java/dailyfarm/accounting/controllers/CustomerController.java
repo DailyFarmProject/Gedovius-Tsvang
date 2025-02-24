@@ -4,6 +4,8 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,7 +20,6 @@ import dailyfarm.accounting.dto.CustomerRequestDto;
 import dailyfarm.accounting.dto.CustomerResponseDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.service.ICustomerManagement;
-
 
 @RestController
 @RequestMapping("/customer")
@@ -41,11 +42,21 @@ public class CustomerController {
 	public CustomerResponseDto getUser(@PathVariable String login) {
 		return service.getUser(login);
 	}
-
 	@PutMapping("/password")
-	public boolean updatePassword(Principal principal, @RequestHeader("X-New-Password") String password) {
-		return service.updatePassword(principal.getName(), password);
+	public ResponseEntity<String> updatePassword(
+	    @RequestHeader("Old-Password") String oldPassword,
+	    @RequestHeader("New-Password") String newPassword,
+	    Principal principal
+	) {
+	    boolean updated = service.updatePassword(principal.getName(), oldPassword, newPassword);
+	    
+	    if (updated) {
+	        return ResponseEntity.ok("Password updated successfully");
+	    } else {
+	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid old password or permission denied");
+	    }
 	}
+
 
 	@PutMapping("/{login}")
 	public boolean updateUser(@PathVariable String login, @RequestBody CustomerRequestDto user) {

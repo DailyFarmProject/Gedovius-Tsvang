@@ -4,6 +4,8 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,7 +20,6 @@ import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.SupplierRequestDto;
 import dailyfarm.accounting.dto.SupplierResponseDto;
 import dailyfarm.accounting.service.ISupplierManagement;
-
 
 @RestController
 @RequestMapping("/supplier")
@@ -42,10 +43,23 @@ public class SupplierController {
 		return service.getUser(login);
 	}
 
-	@PutMapping("/password")
-	public boolean updatePassword(Principal principal, @RequestHeader("X-New-Password") String password) {
-		return service.updatePassword(principal.getName(), password);
-	}
+    @PutMapping("/password")
+    public ResponseEntity<String> updatePassword(
+        @RequestHeader("Old-Password") String oldPassword,
+        @RequestHeader("New-Password") String newPassword,
+        Principal principal
+    ) {
+        String login = principal.getName();
+        System.out.println("Attempting password update for supplier: " + login);
+
+        boolean updated = service.updatePassword(login, oldPassword, newPassword);
+
+        if (updated) {
+            return ResponseEntity.ok("Password updated successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid old password or permission denied");
+        }
+    }
 
 	@PutMapping("/{login}")
 	public boolean updateUser(@PathVariable String login, @RequestBody SupplierRequestDto user) {

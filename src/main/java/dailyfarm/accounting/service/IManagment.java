@@ -13,7 +13,7 @@ public interface IManagment <R ,T> {
 
 	R getUser(String login);
 
-    boolean updatePassword(String login, String password);
+    boolean updatePassword(String login, String oldPassword, String newPassword);;
     
     boolean updateUser(String login, T user);
 

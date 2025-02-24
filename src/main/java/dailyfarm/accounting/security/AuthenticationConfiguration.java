@@ -51,7 +51,10 @@ public class AuthenticationConfiguration implements UserDetailsService {
 	}
 
 	private UserDetails buildUserDetails(UserAccount user) {
-		return new User(user.getLogin(), user.getHash(),
-				AuthorityUtils.createAuthorityList(user.getRoles().toArray(new String[0])));
+	    return new User(user.getLogin(), user.getHash(),
+	        AuthorityUtils.createAuthorityList(user.getRoles()
+	            .stream().toArray(String[]::new)
+	        )
+	    );
 	}
 }

@@ -24,6 +24,7 @@ import dailyfarm.accounting.dto.exceptions.UserNotFoundException;
 import dailyfarm.accounting.entity.CustomerAccount;
 import dailyfarm.accounting.repository.CustomerRepository;
 import jakarta.transaction.Transactional;
+
 @Service
 public class CustomerService implements ICustomerManagement {
 
@@ -58,7 +59,7 @@ public class CustomerService implements ICustomerManagement {
 		log.info("Saving new customer: {}", client);
 		client = repo.save(client);
 		log.info("Customer saved successfully: {}", client.getLogin());
-		
+
 		return CustomerResponseDto.build(client);
 	}
 
@@ -69,7 +70,7 @@ public class CustomerService implements ICustomerManagement {
 	private CustomerAccount getCustomerAccount(String login) {
 		return repo.findByLogin(login).orElseThrow(() -> new UserNotFoundException(login));
 	}
-	
+
 	@Transactional
 	@Override
 	public CustomerResponseDto removeUser(String login) {
@@ -87,32 +88,39 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	public boolean updatePassword(String login, String newPassword) {
-		if (newPassword == null || !isPasswordValid(newPassword)) {
-			throw new PasswordNotValidException(newPassword);
-		}
-		CustomerAccount client = getCustomerAccount(login);
-		if (encoder.matches(newPassword, client.getHash()))
-			throw new PasswordNotValidException(newPassword);
-
-		List<String> lastHash = client.getLastHash();
-		if (isPasswordFromLast(newPassword, lastHash)) {
-			throw new PasswordNotValidException(newPassword);
-		}
-
-		if (lastHash.size() == n_last_hash)
-			lastHash.remove(0);
-		lastHash.add(client.getHash());
-		client.setHash(encoder.encode(newPassword));
-		client.setActivationDate(LocalDateTime.now());
-		repo.save(client);
-		return true;
+	public boolean updatePassword(String login, String oldPassword, String newPassword) {
+	    if (newPassword == null || !isPasswordValid(newPassword)) {
+	        throw new PasswordNotValidException("Invalid new password: " + newPassword);
+	    }
+	    CustomerAccount client = getCustomerAccount(login);
+	   
+	    log.info("Updating password for user: {}", login);
+	    log.info("Stored hash: {}", client.getHash());
+	    if (!encoder.matches(oldPassword, client.getHash())) {
+	        log.warn("Old password does not match for user: {}", login);
+	        throw new PasswordNotValidException("Incorrect old password");
+	    }
+	    log.info("Old password verified successfully");
+	    if (isPasswordFromLast(newPassword, client.getLastHash())) {
+	        log.warn("New password was previously used for user: {}", login);
+	        throw new PasswordNotValidException("New password should not match the previous ones");
+	    }
+	    List<String> lastHash = client.getLastHash();
+	    if (lastHash.size() == n_last_hash) {
+	        lastHash.remove(0); 
+	    }
+	    lastHash.add(client.getHash());
+	    client.setHash(encoder.encode(newPassword));
+	    client.setActivationDate(LocalDateTime.now());
+	    repo.save(client);
+	    log.info("Password updated successfully for user: {}", login);
+	    return true;
 	}
+
 
 	private boolean isPasswordFromLast(String newPassword, List<String> lastHash) {
-	    return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
+		return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
 	}
-
 
 	@Transactional
 	@Override
@@ -138,7 +146,6 @@ public class CustomerService implements ICustomerManagement {
 		repo.save(client);
 		return true;
 	}
-	
 
 	@Transactional
 	@Override
@@ -151,6 +158,7 @@ public class CustomerService implements ICustomerManagement {
 		repo.save(client);
 		return true;
 	}
+
 	@Transactional
 	@Override
 	public boolean activateAccount(String login) {
@@ -168,6 +176,7 @@ public class CustomerService implements ICustomerManagement {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : new RolesResponseDto(login, client.getRoles());
 	}
+
 	@Transactional
 	@Override
 	public boolean addRole(String login, String role) {
@@ -179,19 +188,20 @@ public class CustomerService implements ICustomerManagement {
 		roles.add(role);
 		repo.save(client);
 		return true;
-	
+
 	}
+
 	@Transactional
 	@Override
 	public boolean removeRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
-		
+
 		Set<String> roles = client.getRoles();
 		if (!roles.contains(role))
 			throw new RoleNotExistsException(role);
 		roles.remove(role);
 		repo.save(client);
-		return true;	
+		return true;
 	}
 
 	@Override
@@ -205,6 +215,5 @@ public class CustomerService implements ICustomerManagement {
 		CustomerAccount farmer = getCustomerAccount(login);
 		return farmer.isRevoked() ? null : farmer.getActivationDate();
 	}
-
 
 }

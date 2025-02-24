@@ -27,7 +27,8 @@ public class AuthorizationConfigurations {
 				.requestMatchers(HttpMethod.DELETE, "/supplier/{login}", "/customer/{login}").hasRole("ADMIN")
 				.requestMatchers(HttpMethod.GET, "/supplier/{login}", "/customer/{login}")
 				.access(new WebExpressionAuthorizationManager("#login == authentication.name or hasRole('ADMIN')"))
-				.requestMatchers(HttpMethod.PUT, "/customer/password", "/supplier/password").authenticated()
+				.requestMatchers(HttpMethod.PUT, "/customer/password", "/supplier/password")
+				.authenticated()
 				.anyRequest().permitAll());
 		return http.build();
 	}

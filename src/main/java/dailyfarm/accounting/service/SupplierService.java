@@ -88,27 +88,37 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
-	public boolean updatePassword(String login, String newPassword) {
-		if (newPassword == null || !isPasswordValid(newPassword)) {
-			throw new PasswordNotValidException(newPassword);
-		}
-		SupplierAccount farmer = getSupplierAccount(login);
-		if (encoder.matches(newPassword, farmer.getHash()))
-			throw new PasswordNotValidException(newPassword);
+	public boolean updatePassword(String login, String oldPassword, String newPassword) {
+	    log.info("Attempting password update for supplier: {}", login);
+	    if (newPassword == null || !isPasswordValid(newPassword)) {
+	        log.warn("Invalid new password provided for user: {}", login);
+	        throw new PasswordNotValidException("Invalid password format");
+	    }
+	    SupplierAccount supplier = getSupplierAccount(login);
+	   
+	    if (!encoder.matches(oldPassword, supplier.getHash())) {
+	        log.warn("Incorrect old password for supplier: {}", login);
+	        throw new PasswordNotValidException("Incorrect old password");
+	    }
 
-		List<String> lastHash = farmer.getLastHash();
-		if (isPasswordFromLast(newPassword, lastHash)) {
-			throw new PasswordNotValidException(newPassword);
-		}
-
-		if (lastHash.size() == n_last_hash)
-			lastHash.remove(0);
-		lastHash.add(farmer.getHash());
-		farmer.setHash(encoder.encode(newPassword));
-		farmer.setActivationDate(LocalDateTime.now());
-		repo.save(farmer);
-		return true;
+	    log.info("Old password verified for supplier: {}", login);
+	    if (isPasswordFromLast(newPassword, supplier.getLastHash())) {
+	        log.warn("New password was previously used for supplier: {}", login);
+	        throw new PasswordNotValidException("New password should not match the previous ones");
+	    }
+	    List<String> lastHash = supplier.getLastHash();
+	    if (lastHash.size() == n_last_hash) {
+	        lastHash.remove(0); 
+	    }
+	    lastHash.add(supplier.getHash());
+	    supplier.setHash(encoder.encode(newPassword));
+	    supplier.setActivationDate(LocalDateTime.now());
+	    repo.save(supplier);
+	    log.info("Password updated successfully for supplier: {}", login);
+	    return true;
 	}
+
+
 
 	private boolean isPasswordFromLast(String newPassword, List<String> lastHash) {
 	    return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
