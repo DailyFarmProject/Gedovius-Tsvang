@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -69,18 +70,20 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public SupplierResponseDto removeUser(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		repo.deleteByLogin(login);
 
 		return SupplierResponseDto.build(farmer);
 	}
-
+	
 	private SupplierAccount getSupplierAccount(String login) {
 		return repo.findByLogin(login).orElseThrow(() -> new UserNotFoundException(login));
 	}
 
 	@Override
+    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public SupplierResponseDto getUser(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		return SupplierResponseDto.build(farmer);
@@ -88,6 +91,7 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updatePassword(String login, String oldPassword, String newPassword) {
 	    log.info("Attempting password update for supplier: {}", login);
 	    if (newPassword == null || !isPasswordValid(newPassword)) {
@@ -127,6 +131,7 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updateUser(String login, SupplierRequestDto user) {
 
 		SupplierAccount farmer = getSupplierAccount(login);
@@ -155,6 +160,7 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean revokeAccount(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		if (farmer.isRevoked()) {
@@ -167,6 +173,7 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean activateAccount(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		if (!farmer.isRevoked())
@@ -178,6 +185,7 @@ public class SupplierService implements ISupplierManagement {
 	}
 
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public RolesResponseDto getRoles(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : new RolesResponseDto(login, farmer.getRoles());
@@ -185,6 +193,7 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean addRole(String login, String role) {
 		SupplierAccount farmer = getSupplierAccount(login);
 
@@ -199,6 +208,7 @@ public class SupplierService implements ISupplierManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean removeRole(String login, String role) {
 		SupplierAccount farmer = getSupplierAccount(login);
 
@@ -211,12 +221,14 @@ public class SupplierService implements ISupplierManagement {
 	}
 
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public String getPasswordHash(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : farmer.getHash();
 	}
 
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public LocalDateTime getActivationDate(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : farmer.getActivationDate();

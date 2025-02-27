@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ import dailyfarm.accounting.dto.exceptions.UserExistsException;
 import dailyfarm.accounting.dto.exceptions.UserNotFoundException;
 import dailyfarm.accounting.entity.CustomerAccount;
 import dailyfarm.accounting.repository.CustomerRepository;
+import dailyfarm.accounting.security.JwtUtils;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -35,6 +37,9 @@ public class CustomerService implements ICustomerManagement {
 
 	@Autowired
 	PasswordEncoder encoder;
+	
+	@Autowired
+	JwtUtils jwtUtils;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -73,6 +78,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+    @PreAuthorize("hasRole('ADMIN')")
 	public CustomerResponseDto removeUser(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		repo.deleteByLogin(login);
@@ -81,6 +87,7 @@ public class CustomerService implements ICustomerManagement {
 	}
 
 	@Override
+    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public CustomerResponseDto getUser(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return CustomerResponseDto.build(client);
@@ -88,6 +95,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updatePassword(String login, String oldPassword, String newPassword) {
 	    if (newPassword == null || !isPasswordValid(newPassword)) {
 	        throw new PasswordNotValidException("Invalid new password: " + newPassword);
@@ -124,6 +132,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updateUser(String login, CustomerRequestDto user) {
 
 		CustomerAccount client = getCustomerAccount(login);
@@ -149,6 +158,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean revokeAccount(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		if (client.isRevoked()) {
@@ -161,6 +171,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean activateAccount(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		if (!client.isRevoked())
@@ -172,6 +183,7 @@ public class CustomerService implements ICustomerManagement {
 	}
 
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public RolesResponseDto getRoles(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : new RolesResponseDto(login, client.getRoles());
@@ -179,6 +191,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean addRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
 
@@ -193,6 +206,7 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
+    @PreAuthorize("hasRole('ADMIN')")
 	public boolean removeRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
 
@@ -205,15 +219,18 @@ public class CustomerService implements ICustomerManagement {
 	}
 
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public String getPasswordHash(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : client.getHash();
 	}
 
 	@Override
+	@PreAuthorize("hasRole('ADMIN')")
 	public LocalDateTime getActivationDate(String login) {
-		CustomerAccount farmer = getCustomerAccount(login);
-		return farmer.isRevoked() ? null : farmer.getActivationDate();
+		CustomerAccount client = getCustomerAccount(login);
+		return client.isRevoked() ? null : client.getActivationDate();
+	}
+	
 	}
 
-}
