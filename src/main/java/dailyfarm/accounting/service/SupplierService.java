@@ -4,17 +4,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.SupplierRequestDto;
 import dailyfarm.accounting.dto.SupplierResponseDto;
+import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.exceptions.AccountActivationException;
 import dailyfarm.accounting.dto.exceptions.AccountRevokeException;
 import dailyfarm.accounting.dto.exceptions.PasswordNotValidException;
@@ -24,18 +25,19 @@ import dailyfarm.accounting.dto.exceptions.UserExistsException;
 import dailyfarm.accounting.dto.exceptions.UserNotFoundException;
 import dailyfarm.accounting.entity.SupplierAccount;
 import dailyfarm.accounting.repository.SupplierRepository;
+import dailyfarm.accounting.security.JwtUtils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class SupplierService implements ISupplierManagement {
 
-	private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
-
-	
-	@Autowired
-	SupplierRepository repo;
-
-	@Autowired
-	PasswordEncoder encoder;
+	private final SupplierRepository repo;
+	private final PasswordEncoder encoder;
+	private final JwtUtils jwtUtils;
+	private final AuthenticationManager authManager;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -43,6 +45,16 @@ public class SupplierService implements ISupplierManagement {
 	@Value("${n_last_hash:3}")
 	private int n_last_hash;
 
+	@Override
+	public TokenResponseDto login(LoginRequestDto dto) {
+		log.debug("Attempting login for user: {}", dto.login());
+		authManager.authenticate(new UsernamePasswordAuthenticationToken(dto.login(), dto.password()));
+		SupplierAccount farmer = getSupplierAccount(dto.login());
+        String token = jwtUtils.generateToken(farmer.getLogin(), farmer.getEmail(), farmer.getRoles());
+        log.info("Login successful, token generated for user: {}", dto.login());
+        return new TokenResponseDto(token);
+	}
+				
 	@Override
 	public SupplierResponseDto registration(SupplierRequestDto user) {
 
@@ -53,7 +65,6 @@ public class SupplierService implements ISupplierManagement {
 			throw new PasswordNotValidException(user.password());
 
 		String hashedPassword = encoder.encode(user.password());
-
 		SupplierAccount farmer = SupplierAccount.of(user);
 		farmer.setHash(hashedPassword);
 		
@@ -74,7 +85,6 @@ public class SupplierService implements ISupplierManagement {
 	public SupplierResponseDto removeUser(String login) {
 		SupplierAccount farmer = getSupplierAccount(login);
 		repo.deleteByLogin(login);
-
 		return SupplierResponseDto.build(farmer);
 	}
 	
@@ -136,6 +146,10 @@ public class SupplierService implements ISupplierManagement {
 
 		SupplierAccount farmer = getSupplierAccount(login);
 
+		if (user.password() != null) {
+            log.warn("Password update attempted via updateUser for login: {}", login);
+            throw new IllegalArgumentException("supplier/password endpoint to update password");
+        }
 		if (user.email() != null)
 			farmer.setEmail(user.email());
 		if (user.companyName() != null)
@@ -149,12 +163,9 @@ public class SupplierService implements ISupplierManagement {
 		if (user.phone() != null)
 			farmer.setPhone(user.phone());
 
-		if (user.password() != null) {
-			String hashedPassword = encoder.encode(user.password());
-			farmer.setHash(hashedPassword);
-		}
-
 		repo.save(farmer);
+		log.info("Farmer updated successfully: {}", login);
+
 		return true;
 	}
 
@@ -233,5 +244,7 @@ public class SupplierService implements ISupplierManagement {
 		SupplierAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : farmer.getActivationDate();
 	}
+
+	
 
 }
