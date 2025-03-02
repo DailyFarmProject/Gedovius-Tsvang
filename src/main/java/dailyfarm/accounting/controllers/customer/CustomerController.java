@@ -1,4 +1,4 @@
-package dailyfarm.accounting.controllers;
+package dailyfarm.accounting.controllers.customer;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import dailyfarm.accounting.dto.CustomerRequestDto;
-import dailyfarm.accounting.dto.CustomerResponseDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
-import dailyfarm.accounting.service.ICustomerManagement;
+import dailyfarm.accounting.dto.customer.CustomerRequestDto;
+import dailyfarm.accounting.dto.customer.CustomerResponseDto;
+import dailyfarm.accounting.service.customer.ICustomerManagement;
 
 @RestController
 @RequestMapping("/customer")

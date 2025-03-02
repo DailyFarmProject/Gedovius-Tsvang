@@ -7,12 +7,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import dailyfarm.accounting.entity.AdminAccount;
-import dailyfarm.accounting.entity.CustomerAccount;
-import dailyfarm.accounting.entity.SupplierAccount;
-import dailyfarm.accounting.repository.AdminRepository;
-import dailyfarm.accounting.repository.CustomerRepository;
-import dailyfarm.accounting.repository.SupplierRepository;
+import dailyfarm.accounting.entity.admin.AdminAccount;
+import dailyfarm.accounting.entity.customer.CustomerAccount;
+import dailyfarm.accounting.entity.seller.SellerAccount;
+import dailyfarm.accounting.repository.admin.AdminRepository;
+import dailyfarm.accounting.repository.customer.CustomerRepository;
+import dailyfarm.accounting.repository.seller.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
 	private final CustomerRepository customerRepo;
-	private final SupplierRepository supplierRepo;
+	private final SellerRepository supplierRepo;
 	private final AdminRepository adminRepo; 
 
 	@Override
@@ -41,7 +41,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 			return UserDetailsImpl.build(customer.get());
 		}
 
-		Optional<SupplierAccount> supplier = supplierRepo.findByLogin(login);
+		Optional<SellerAccount> supplier = supplierRepo.findByLogin(login);
 		if (supplier.isPresent()) {
 			log.debug("Supplier found: {}", login);
 			return UserDetailsImpl.build(supplier.get());

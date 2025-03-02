@@ -1,6 +1,5 @@
-package dailyfarm.accounting.entity;
+package dailyfarm.accounting.entity.customer;
 
-import dailyfarm.accounting.dto.CustomerRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,6 +7,10 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import dailyfarm.accounting.dto.customer.CustomerRequestDto;
+import dailyfarm.accounting.entity.UserAccount;
+import dailyfarm.accounting.entity.seller.SellerAccount;
 
 
 @Getter
@@ -36,10 +39,10 @@ public class CustomerAccount extends UserAccount {
     private Set<String> roles = new HashSet<>();
 
     @ManyToMany
-    @JoinTable(name = "customer_supplier",
+    @JoinTable(name = "customer_seller",
             joinColumns = @JoinColumn(name = "customer_id"),
-            inverseJoinColumns = @JoinColumn(name = "supplier_id"))
-    private Set<SupplierAccount> suppliers = new HashSet<>();
+            inverseJoinColumns = @JoinColumn(name = "seller_id"))
+    private Set<SellerAccount> sellers = new HashSet<>();
     
     @Column(nullable = false)
     private LocalDateTime activationDate = LocalDateTime.now();

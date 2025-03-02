@@ -1,4 +1,4 @@
-package dailyfarm.accounting.controllers;
+package dailyfarm.accounting.controllers.seller;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -17,29 +17,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import dailyfarm.accounting.dto.RolesResponseDto;
-import dailyfarm.accounting.dto.SupplierRequestDto;
-import dailyfarm.accounting.dto.SupplierResponseDto;
-import dailyfarm.accounting.service.ISupplierManagement;
+import dailyfarm.accounting.dto.seller.SellerRequestDto;
+import dailyfarm.accounting.dto.seller.SellerResponseDto;
+import dailyfarm.accounting.service.seller.ISellerManagement;
 
 @RestController
-@RequestMapping("/supplier")
-public class SupplierController {
+@RequestMapping("/seller")
+public class SellerController {
 
 	@Autowired
-	private ISupplierManagement service;
+	private ISellerManagement service;
 
 	@PostMapping("/register")
-	public SupplierResponseDto registration(@RequestBody SupplierRequestDto supplier) {
+	public SellerResponseDto registration(@RequestBody SellerRequestDto supplier) {
 		return service.registration(supplier);
 	}
 
 	@DeleteMapping("/{login}")
-	public SupplierResponseDto remove(@PathVariable String login) {
+	public SellerResponseDto remove(@PathVariable String login) {
 		return service.removeUser(login);
 	}
 
 	@GetMapping("/{login}")
-	public SupplierResponseDto getUser(@PathVariable String login) {
+	public SellerResponseDto getUser(@PathVariable String login) {
 		return service.getUser(login);
 	}
 
@@ -50,7 +50,7 @@ public class SupplierController {
         Principal principal
     ) {
         String login = principal.getName();
-        System.out.println("Attempting password update for supplier: " + login);
+       
 
         boolean updated = service.updatePassword(login, oldPassword, newPassword);
 
@@ -62,7 +62,7 @@ public class SupplierController {
     }
 
 	@PutMapping("/{login}")
-	public boolean updateUser(@PathVariable String login, @RequestBody SupplierRequestDto user) {
+	public boolean updateUser(@PathVariable String login, @RequestBody SellerRequestDto user) {
 		return service.updateUser(login, user);
 	}
 

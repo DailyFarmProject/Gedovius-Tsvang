@@ -1,4 +1,4 @@
-package dailyfarm.accounting.service;
+package dailyfarm.accounting.service.customer;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,18 +12,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import dailyfarm.accounting.dto.CustomerRequestDto;
-import dailyfarm.accounting.dto.CustomerResponseDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
-import dailyfarm.accounting.dto.exceptions.AccountActivationException;
-import dailyfarm.accounting.dto.exceptions.AccountRevokeException;
-import dailyfarm.accounting.dto.exceptions.PasswordNotValidException;
-import dailyfarm.accounting.dto.exceptions.RoleExistsException;
-import dailyfarm.accounting.dto.exceptions.RoleNotExistsException;
-import dailyfarm.accounting.dto.exceptions.UserExistsException;
-import dailyfarm.accounting.dto.exceptions.UserNotFoundException;
-import dailyfarm.accounting.entity.CustomerAccount;
-import dailyfarm.accounting.repository.CustomerRepository;
+import dailyfarm.accounting.dto.customer.CustomerRequestDto;
+import dailyfarm.accounting.dto.customer.CustomerResponseDto;
+import dailyfarm.accounting.entity.customer.CustomerAccount;
+import dailyfarm.accounting.exceptions.AccountActivationException;
+import dailyfarm.accounting.exceptions.AccountRevokeException;
+import dailyfarm.accounting.exceptions.PasswordNotValidException;
+import dailyfarm.accounting.exceptions.RoleExistsException;
+import dailyfarm.accounting.exceptions.RoleNotExistsException;
+import dailyfarm.accounting.exceptions.UserExistsException;
+import dailyfarm.accounting.exceptions.UserNotFoundException;
+import dailyfarm.accounting.repository.customer.CustomerRepository;
 import dailyfarm.accounting.security.JwtUtils;
 import jakarta.transaction.Transactional;
 

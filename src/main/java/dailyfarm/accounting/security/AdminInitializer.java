@@ -6,8 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import dailyfarm.accounting.entity.AdminAccount;
-import dailyfarm.accounting.repository.AdminRepository;
+
+import dailyfarm.accounting.entity.admin.AdminAccount;
+import dailyfarm.accounting.repository.admin.AdminRepository;
 import lombok.RequiredArgsConstructor;
 import jakarta.transaction.Transactional;
 

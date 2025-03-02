@@ -1,4 +1,4 @@
-package dailyfarm.accounting.service;
+package dailyfarm.accounting.service.seller;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,26 +13,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import dailyfarm.accounting.dto.RolesResponseDto;
-import dailyfarm.accounting.dto.SupplierRequestDto;
-import dailyfarm.accounting.dto.SupplierResponseDto;
-import dailyfarm.accounting.dto.exceptions.AccountActivationException;
-import dailyfarm.accounting.dto.exceptions.AccountRevokeException;
-import dailyfarm.accounting.dto.exceptions.PasswordNotValidException;
-import dailyfarm.accounting.dto.exceptions.RoleExistsException;
-import dailyfarm.accounting.dto.exceptions.RoleNotExistsException;
-import dailyfarm.accounting.dto.exceptions.UserExistsException;
-import dailyfarm.accounting.dto.exceptions.UserNotFoundException;
-import dailyfarm.accounting.entity.SupplierAccount;
-import dailyfarm.accounting.repository.SupplierRepository;
+import dailyfarm.accounting.dto.seller.SellerRequestDto;
+import dailyfarm.accounting.dto.seller.SellerResponseDto;
+import dailyfarm.accounting.entity.seller.SellerAccount;
+import dailyfarm.accounting.exceptions.AccountActivationException;
+import dailyfarm.accounting.exceptions.AccountRevokeException;
+import dailyfarm.accounting.exceptions.PasswordNotValidException;
+import dailyfarm.accounting.exceptions.RoleExistsException;
+import dailyfarm.accounting.exceptions.RoleNotExistsException;
+import dailyfarm.accounting.exceptions.UserExistsException;
+import dailyfarm.accounting.exceptions.UserNotFoundException;
+import dailyfarm.accounting.repository.seller.SellerRepository;
+import dailyfarm.accounting.service.customer.CustomerService;
 import jakarta.transaction.Transactional;
 @Service
-public class SupplierService implements ISupplierManagement {
+public class SellerService implements ISellerManagement {
 
 	private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
 
 	
 	@Autowired
-	SupplierRepository repo;
+	SellerRepository repo;
 
 	@Autowired
 	PasswordEncoder encoder;
@@ -44,7 +45,7 @@ public class SupplierService implements ISupplierManagement {
 	private int n_last_hash;
 
 	@Override
-	public SupplierResponseDto registration(SupplierRequestDto user) {
+	public SellerResponseDto registration(SellerRequestDto user) {
 
 		if (repo.findByLogin(user.login()).isPresent()) {
 			throw new UserExistsException(user.login());
@@ -54,14 +55,14 @@ public class SupplierService implements ISupplierManagement {
 
 		String hashedPassword = encoder.encode(user.password());
 
-		SupplierAccount farmer = SupplierAccount.of(user);
+		SellerAccount farmer = SellerAccount.of(user);
 		farmer.setHash(hashedPassword);
 		
 		log.info("Saving new supplier: {}", farmer);
 		farmer = repo.save(farmer);
 		log.info("Supplier saved successfully: {}", farmer.getLogin());
 
-		return SupplierResponseDto.build(farmer);
+		return SellerResponseDto.build(farmer);
 	}
 
 	private boolean isPasswordValid(String password) {
@@ -71,22 +72,22 @@ public class SupplierService implements ISupplierManagement {
 	@Transactional
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
-	public SupplierResponseDto removeUser(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
+	public SellerResponseDto removeUser(String login) {
+		SellerAccount farmer = getSupplierAccount(login);
 		repo.deleteByLogin(login);
 
-		return SupplierResponseDto.build(farmer);
+		return SellerResponseDto.build(farmer);
 	}
 	
-	private SupplierAccount getSupplierAccount(String login) {
+	private SellerAccount getSupplierAccount(String login) {
 		return repo.findByLogin(login).orElseThrow(() -> new UserNotFoundException(login));
 	}
 
 	@Override
     @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
-	public SupplierResponseDto getUser(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
-		return SupplierResponseDto.build(farmer);
+	public SellerResponseDto getUser(String login) {
+		SellerAccount farmer = getSupplierAccount(login);
+		return SellerResponseDto.build(farmer);
 	}
 
 	@Transactional
@@ -98,7 +99,7 @@ public class SupplierService implements ISupplierManagement {
 	        log.warn("Invalid new password provided for user: {}", login);
 	        throw new PasswordNotValidException("Invalid password format");
 	    }
-	    SupplierAccount supplier = getSupplierAccount(login);
+	    SellerAccount supplier = getSupplierAccount(login);
 	   
 	    if (!encoder.matches(oldPassword, supplier.getHash())) {
 	        log.warn("Incorrect old password for supplier: {}", login);
@@ -132,9 +133,9 @@ public class SupplierService implements ISupplierManagement {
 	@Transactional
 	@Override
     @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
-	public boolean updateUser(String login, SupplierRequestDto user) {
+	public boolean updateUser(String login, SellerRequestDto user) {
 
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 
 		if (user.email() != null)
 			farmer.setEmail(user.email());
@@ -162,7 +163,7 @@ public class SupplierService implements ISupplierManagement {
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public boolean revokeAccount(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 		if (farmer.isRevoked()) {
 			throw new AccountRevokeException(login);
 		}
@@ -175,7 +176,7 @@ public class SupplierService implements ISupplierManagement {
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public boolean activateAccount(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 		if (!farmer.isRevoked())
 			throw new AccountActivationException(login);
 		farmer.setRevoked(false);
@@ -187,7 +188,7 @@ public class SupplierService implements ISupplierManagement {
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public RolesResponseDto getRoles(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : new RolesResponseDto(login, farmer.getRoles());
 	}
 
@@ -195,7 +196,7 @@ public class SupplierService implements ISupplierManagement {
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public boolean addRole(String login, String role) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 
 		Set<String> roles = farmer.getRoles();
 		if (roles.contains(role))
@@ -210,7 +211,7 @@ public class SupplierService implements ISupplierManagement {
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public boolean removeRole(String login, String role) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 
 		Set<String> roles = farmer.getRoles();
 		if (!roles.contains(role))
@@ -223,14 +224,14 @@ public class SupplierService implements ISupplierManagement {
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public String getPasswordHash(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : farmer.getHash();
 	}
 
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
 	public LocalDateTime getActivationDate(String login) {
-		SupplierAccount farmer = getSupplierAccount(login);
+		SellerAccount farmer = getSupplierAccount(login);
 		return farmer.isRevoked() ? null : farmer.getActivationDate();
 	}
 

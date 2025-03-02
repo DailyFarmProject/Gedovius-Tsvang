@@ -1,6 +1,6 @@
-package dailyfarm.accounting.dto;
+package dailyfarm.accounting.dto.customer;
 
-import dailyfarm.accounting.entity.CustomerAccount;
+import dailyfarm.accounting.entity.customer.CustomerAccount;
 
 public record CustomerResponseDto(
 		String login,  

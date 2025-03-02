@@ -1,4 +1,4 @@
-package dailyfarm.accounting.dto;
+package dailyfarm.accounting.dto.customer;
 
 
 public record CustomerRequestDto(

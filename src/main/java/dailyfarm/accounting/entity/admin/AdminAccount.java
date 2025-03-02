@@ -1,10 +1,12 @@
-package dailyfarm.accounting.entity;
+package dailyfarm.accounting.entity.admin;
 
 import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.util.Collections;
 import java.util.Set;
+
+import dailyfarm.accounting.entity.UserAccount;
 
 @Getter
 @NoArgsConstructor

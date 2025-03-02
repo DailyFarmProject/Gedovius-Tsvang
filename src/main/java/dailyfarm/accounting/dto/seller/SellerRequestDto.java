@@ -1,6 +1,6 @@
-package dailyfarm.accounting.dto;
+package dailyfarm.accounting.dto.seller;
 
-public record SupplierRequestDto(
+public record SellerRequestDto(
 		
 		String login, 
 		String password, 
