@@ -3,6 +3,7 @@ package dailyfarm.accounting.controllers;
 import java.security.Principal;
 import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,31 +18,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dailyfarm.accounting.dto.CustomerRequestDto;
 import dailyfarm.accounting.dto.CustomerResponseDto;
-import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
-import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.service.ICustomerManagement;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/customer")
 public class CustomerController {
 
-	private final ICustomerManagement service;
+	@Autowired
+	private ICustomerManagement service;
 
 	@PostMapping("/register")
-	public CustomerResponseDto registration(@Valid @RequestBody CustomerRequestDto customer) {
+	public CustomerResponseDto registration(@RequestBody CustomerRequestDto customer) {
 		return service.registration(customer);
 	}
 
-	@PostMapping("/auth/login")
-	public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
-		TokenResponseDto tokenResponse = service.login(dto);
-        return ResponseEntity.ok(tokenResponse);
-	}
-	
 	@DeleteMapping("/{login}")
 	public CustomerResponseDto remove(@PathVariable String login) {
 		return service.removeUser(login);
@@ -51,7 +42,6 @@ public class CustomerController {
 	public CustomerResponseDto getUser(@PathVariable String login) {
 		return service.getUser(login);
 	}
-	
 	@PutMapping("/password")
 	public ResponseEntity<String> updatePassword(
 	    @RequestHeader("Old-Password") String oldPassword,
@@ -67,31 +57,21 @@ public class CustomerController {
 	    }
 	}
 
-	
+
 	@PutMapping("/{login}")
-	public ResponseEntity<String> updateUser(@PathVariable String login,@Valid @RequestBody CustomerRequestDto user) {
-	    boolean updated = service.updateUser(login, user);
-	    return updated 
-	        ? ResponseEntity.ok("User updated successfully")
-	        : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to update user");
+	public boolean updateUser(@PathVariable String login, @RequestBody CustomerRequestDto user) {
+		return service.updateUser(login, user);
 	}
-	
 
 	@PutMapping("/revoke/{login}")
-	public ResponseEntity<String> revokeAccount(@PathVariable String login) {
-		boolean revoked = service.revokeAccount(login);
-        return revoked
-            ? ResponseEntity.ok("Account revoked successfully")
-            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to revoke account");
-    }
-	
+	public boolean revokeAccount(@PathVariable String login) {
+		return service.revokeAccount(login);
+	}
+
 	@PutMapping("/activate/{login}")
-    public ResponseEntity<String> activateAccount(@PathVariable String login) {
-        boolean activated = service.activateAccount(login);
-        return activated
-            ? ResponseEntity.ok("Account activated successfully")
-            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to activate account");
-    }
+	public boolean activateAccount(@PathVariable String login) {
+		return service.activateAccount(login);
+	}
 
 	@GetMapping("/roles/{login}")
 	public RolesResponseDto getRoles(@PathVariable String login) {
@@ -99,20 +79,14 @@ public class CustomerController {
 	}
 
 	@PutMapping("/{login}/role/{role}")
-    public ResponseEntity<String> addRole(@PathVariable String login, @PathVariable String role) {
-        boolean added = service.addRole(login, role);
-        return added
-            ? ResponseEntity.ok("Role added successfully")
-            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to add role");
-    }
+	public boolean addRole(@PathVariable String login, @PathVariable String role) {
+		return service.addRole(login, role);
+	}
 
 	@DeleteMapping("/{login}/role/{role}")
-    public ResponseEntity<String> removeRole(@PathVariable String login, @PathVariable String role) {
-        boolean removed = service.removeRole(login, role);
-        return removed
-            ? ResponseEntity.ok("Role removed successfully")
-            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to remove role");
-    }
+	public boolean removeRole(@PathVariable String login, @PathVariable String role) {
+		return service.removeRole(login, role);
+	}
 
 	@GetMapping("/password/{login}")
 	public String getPasswordHash(@PathVariable String login) {

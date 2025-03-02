@@ -3,6 +3,7 @@ package dailyfarm.accounting.controllers;
 import java.security.Principal;
 import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,32 +16,23 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.SupplierRequestDto;
 import dailyfarm.accounting.dto.SupplierResponseDto;
-import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.service.ISupplierManagement;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/supplier")
 public class SupplierController {
 
-	private final ISupplierManagement service;
+	@Autowired
+	private ISupplierManagement service;
 
 	@PostMapping("/register")
 	public SupplierResponseDto registration(@RequestBody SupplierRequestDto supplier) {
 		return service.registration(supplier);
 	}
-	@PostMapping("/auth/login")
-	public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
-		TokenResponseDto tokenResponse = service.login(dto);
-        return ResponseEntity.ok(tokenResponse);
-	}
-	
+
 	@DeleteMapping("/{login}")
 	public SupplierResponseDto remove(@PathVariable String login) {
 		return service.removeUser(login);
@@ -57,38 +49,32 @@ public class SupplierController {
         @RequestHeader("New-Password") String newPassword,
         Principal principal
     ) {
-    	boolean updated = service.updatePassword(principal.getName(), oldPassword, newPassword);
-	    
-	    if (updated) {
-	        return ResponseEntity.ok("Password updated successfully");
-	    } else {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid old password or permission denied");
-	    }
-	}
+        String login = principal.getName();
+        System.out.println("Attempting password update for supplier: " + login);
+
+        boolean updated = service.updatePassword(login, oldPassword, newPassword);
+
+        if (updated) {
+            return ResponseEntity.ok("Password updated successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid old password or permission denied");
+        }
+    }
 
 	@PutMapping("/{login}")
-	public ResponseEntity<String> updateUser(@PathVariable String login,@Valid @RequestBody SupplierRequestDto user) {
-		boolean updated = service.updateUser(login, user);
-	    return updated 
-	        ? ResponseEntity.ok("User updated successfully")
-	        : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to update user");
-		}
+	public boolean updateUser(@PathVariable String login, @RequestBody SupplierRequestDto user) {
+		return service.updateUser(login, user);
+	}
 
 	@PutMapping("/revoke/{login}")
-	public ResponseEntity<String> revokeAccount(@PathVariable String login) {
-		boolean revoked = service.revokeAccount(login);
-        return revoked
-            ? ResponseEntity.ok("Account revoked successfully")
-            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to revoke account");
-    	}
+	public boolean revokeAccount(@PathVariable String login) {
+		return service.revokeAccount(login);
+	}
 
 	@PutMapping("/activate/{login}")
-	public ResponseEntity<String> activateAccount(@PathVariable String login) {
-		boolean activated = service.activateAccount(login);
-        return activated
-            ? ResponseEntity.ok("Account activated successfully")
-            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to activate account");
-   	}
+	public boolean activateAccount(@PathVariable String login) {
+		return service.activateAccount(login);
+	}
 
 	@GetMapping("/roles/{login}")
 	public RolesResponseDto getRoles(@PathVariable String login) {
@@ -96,20 +82,14 @@ public class SupplierController {
 	}
 
 	@PutMapping("/{login}/role/{role}")
-	public ResponseEntity<String> addRole(@PathVariable String login, @PathVariable String role) {
-		 boolean added = service.addRole(login, role);
-	        return added
-	            ? ResponseEntity.ok("Role added successfully")
-	            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to add role");
-	    	}
+	public boolean addRole(@PathVariable String login, @PathVariable String role) {
+		return service.addRole(login, role);
+	}
 
 	@DeleteMapping("/{login}/role/{role}")
-	public ResponseEntity<String> removeRole(@PathVariable String login, @PathVariable String role) {
-		 boolean removed = service.removeRole(login, role);
-	        return removed
-	            ? ResponseEntity.ok("Role removed successfully")
-	            : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to remove role");
-	    }
+	public boolean removeRole(@PathVariable String login, @PathVariable String role) {
+		return service.removeRole(login, role);
+	}
 
 	@GetMapping("/password/{login}")
 	public String getPasswordHash(@PathVariable String login) {
