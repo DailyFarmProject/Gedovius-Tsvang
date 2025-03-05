@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.entity.UserAccount;
-import dailyfarm.accounting.entity.seller.SellerAccount;
+
 
 
 @Getter
@@ -37,12 +37,6 @@ public class CustomerAccount extends UserAccount {
     @CollectionTable(name = "customer_roles", joinColumns = @JoinColumn(name = "customer_id"))
     @Column(name = "role")
     private Set<String> roles = new HashSet<>();
-
-    @ManyToMany
-    @JoinTable(name = "customer_seller",
-            joinColumns = @JoinColumn(name = "customer_id"),
-            inverseJoinColumns = @JoinColumn(name = "seller_id"))
-    private Set<SellerAccount> sellers = new HashSet<>();
     
     @Column(nullable = false)
     private LocalDateTime activationDate = LocalDateTime.now();

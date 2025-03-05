@@ -5,12 +5,13 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import dailyfarm.accounting.dto.seller.SellerRequestDto;
 import dailyfarm.accounting.entity.UserAccount;
-import dailyfarm.accounting.entity.customer.CustomerAccount;
+import dailyfarm.product.entity.Product;
 
 @Getter
 @Setter
@@ -34,15 +35,16 @@ public class SellerAccount extends UserAccount {
 
 	@Column(nullable = false, length = 20)
 	private String phone;
+	
+	@OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<Product> products;
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "sellers_roles", joinColumns = @JoinColumn(name = "seller_id"))
 	@Column(name = "role")
 	private Set<String> roles = new HashSet<>();
 
-	@ManyToMany(mappedBy = "sellers")
-	private Set<CustomerAccount> customers = new HashSet<>();
-
+	
 	   @Column(nullable = false)
 	    private LocalDateTime activationDate = LocalDateTime.now();
 
