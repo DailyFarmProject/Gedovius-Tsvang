@@ -16,10 +16,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
+import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.dto.customer.CustomerResponseDto;
 import dailyfarm.accounting.service.customer.ICustomerManagement;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/customer")
@@ -33,6 +36,12 @@ public class CustomerController {
 		return service.registration(customer);
 	}
 
+	@PostMapping("/auth/login")
+	public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
+		TokenResponseDto tokenResponse = service.login(dto);
+        return ResponseEntity.ok(tokenResponse);
+	}
+	
 	@DeleteMapping("/{login}")
 	public CustomerResponseDto remove(@PathVariable String login) {
 		return service.removeUser(login);

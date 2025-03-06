@@ -4,15 +4,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+
+import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
+import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.dto.customer.CustomerResponseDto;
 import dailyfarm.accounting.entity.customer.CustomerAccount;
@@ -26,20 +28,18 @@ import dailyfarm.accounting.exceptions.UserNotFoundException;
 import dailyfarm.accounting.repository.customer.CustomerRepository;
 import dailyfarm.accounting.security.JwtUtils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class CustomerService implements ICustomerManagement {
 
-	private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
-
-	@Autowired
-	CustomerRepository repo;
-
-	@Autowired
-	PasswordEncoder encoder;
-	
-	@Autowired
-	JwtUtils jwtUtils;
+	private final CustomerRepository repo;
+	private final PasswordEncoder encoder;
+	private final JwtUtils jwtUtils;
+	private final AuthenticationManager authManager;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -48,24 +48,33 @@ public class CustomerService implements ICustomerManagement {
 	private int n_last_hash;
 
 	@Override
+	public TokenResponseDto login(LoginRequestDto dto) {
+		log.debug("Attempting login for user: {}", dto.login());
+		authManager.authenticate(new UsernamePasswordAuthenticationToken(dto.login(), dto.password()));
+		CustomerAccount customer = getCustomerAccount(dto.login());
+        String token = jwtUtils.generateToken(customer.getLogin(), customer.getEmail(), customer.getRoles());
+        log.info("Login successful, token generated for user: {}", dto.login());
+        return new TokenResponseDto(token);
+	}
+	
+	@Override
 	public CustomerResponseDto registration(CustomerRequestDto user) {
+	    if (repo.findByLogin(user.login()).isPresent()) {
+	        throw new UserExistsException(user.login());
+	    }
+	    if (!isPasswordValid(user.password())) {
+	        throw new PasswordNotValidException(user.password());
+	    }
 
-		if (repo.findByLogin(user.login()).isPresent()) {
-			throw new UserExistsException(user.login());
-		}
-		if (!isPasswordValid(user.password()))
-			throw new PasswordNotValidException(user.password());
+	    String hashedPassword = encoder.encode(user.password());
+	    CustomerAccount client = CustomerAccount.of(user);
+	    client.setHash(hashedPassword);
 
-		String hashedPassword = encoder.encode(user.password());
+	    log.info("Saving new customer: {}", client);
+	    client = repo.save(client);
+	    log.info("Customer saved successfully: {}", client.getLogin());
 
-		CustomerAccount client = CustomerAccount.of(user);
-		client.setHash(hashedPassword);
-
-		log.info("Saving new customer: {}", client);
-		client = repo.save(client);
-		log.info("Customer saved successfully: {}", client.getLogin());
-
-		return CustomerResponseDto.build(client);
+	    return CustomerResponseDto.build(client);
 	}
 
 	private boolean isPasswordValid(String password) {
@@ -82,7 +91,6 @@ public class CustomerService implements ICustomerManagement {
 	public CustomerResponseDto removeUser(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		repo.deleteByLogin(login);
-
 		return CustomerResponseDto.build(client);
 	}
 
@@ -103,7 +111,6 @@ public class CustomerService implements ICustomerManagement {
 	    CustomerAccount client = getCustomerAccount(login);
 	   
 	    log.info("Updating password for user: {}", login);
-	    log.info("Stored hash: {}", client.getHash());
 	    if (!encoder.matches(oldPassword, client.getHash())) {
 	        log.warn("Old password does not match for user: {}", login);
 	        throw new PasswordNotValidException("Incorrect old password");
@@ -137,22 +144,23 @@ public class CustomerService implements ICustomerManagement {
 
 		CustomerAccount client = getCustomerAccount(login);
 
+		if (user.password() != null) {
+            log.warn("Password update attempted via updateUser for login: {}", login);
+            throw new IllegalArgumentException("customer/password endpoint to update password");
+        }
 		if (user.email() != null)
 			client.setEmail(user.email());
 		if (user.firstName() != null)
-			client.setFirstName(login);
+			client.setFirstName(user.firstName());
 		if (user.lastName() != null)
-			client.setLastHash(null);
+			client.setLastName(user.lastName());
 		if (user.address() != null)
-			client.setAddress(login);
-		if (user.phone() != null)
-			client.setPhone(user.phone());
-		if (user.password() != null) {
-			String hashedPassword = encoder.encode(user.password());
-			client.setHash(hashedPassword);
-		}
+	        client.setAddress(user.address());
+	    if (user.phone() != null)
+	        client.setPhone(user.phone());
 
 		repo.save(client);
+		log.info("Customer updated successfully: {}", login);
 		return true;
 	}
 
@@ -231,6 +239,7 @@ public class CustomerService implements ICustomerManagement {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : client.getActivationDate();
 	}
+
+
 	
 	}
-

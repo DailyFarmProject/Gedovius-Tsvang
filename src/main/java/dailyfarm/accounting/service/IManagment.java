@@ -2,7 +2,9 @@ package dailyfarm.accounting.service;
 
 import java.time.LocalDateTime;
 
+import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
+import dailyfarm.accounting.dto.TokenResponseDto;
 
 public interface IManagment <R ,T> {
 
@@ -10,6 +12,8 @@ public interface IManagment <R ,T> {
 	R registration(T user);
 
 	R removeUser(String login);
+
+    TokenResponseDto login(LoginRequestDto dto);
 
 	R getUser(String login);
 
