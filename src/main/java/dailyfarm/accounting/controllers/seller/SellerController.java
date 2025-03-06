@@ -16,10 +16,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
+import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.seller.SellerRequestDto;
 import dailyfarm.accounting.dto.seller.SellerResponseDto;
 import dailyfarm.accounting.service.seller.ISellerManagement;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/seller")
@@ -31,6 +34,12 @@ public class SellerController {
 	@PostMapping("/register")
 	public SellerResponseDto registration(@RequestBody SellerRequestDto supplier) {
 		return service.registration(supplier);
+	}
+	
+	@PostMapping("/auth/login")
+	public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
+		TokenResponseDto tokenResponse = service.login(dto);
+        return ResponseEntity.ok(tokenResponse);
 	}
 
 	@DeleteMapping("/{login}")

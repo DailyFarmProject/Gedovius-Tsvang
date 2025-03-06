@@ -4,15 +4,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
+import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.seller.SellerRequestDto;
 import dailyfarm.accounting.dto.seller.SellerResponseDto;
 import dailyfarm.accounting.entity.seller.SellerAccount;
@@ -24,19 +25,20 @@ import dailyfarm.accounting.exceptions.RoleNotExistsException;
 import dailyfarm.accounting.exceptions.UserExistsException;
 import dailyfarm.accounting.exceptions.UserNotFoundException;
 import dailyfarm.accounting.repository.seller.SellerRepository;
-import dailyfarm.accounting.service.customer.CustomerService;
+import dailyfarm.accounting.security.JwtUtils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class SellerService implements ISellerManagement {
 
-	private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
-
-	
-	@Autowired
-	SellerRepository repo;
-
-	@Autowired
-	PasswordEncoder encoder;
+	private final SellerRepository repo;
+	private final PasswordEncoder encoder;
+	private final JwtUtils jwtUtils;
+	private final AuthenticationManager authManager;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -54,10 +56,9 @@ public class SellerService implements ISellerManagement {
 			throw new PasswordNotValidException(user.password());
 
 		String hashedPassword = encoder.encode(user.password());
-
 		SellerAccount farmer = SellerAccount.of(user);
 		farmer.setHash(hashedPassword);
-		
+
 		log.info("Saving new supplier: {}", farmer);
 		farmer = repo.save(farmer);
 		log.info("Supplier saved successfully: {}", farmer.getLogin());
@@ -69,6 +70,16 @@ public class SellerService implements ISellerManagement {
 		return password.length() >= passwordLength;
 	}
 
+	@Override
+	public TokenResponseDto login(LoginRequestDto dto) {
+		log.debug("Attempting login for user: {}", dto.login());
+		authManager.authenticate(new UsernamePasswordAuthenticationToken(dto.login(), dto.password()));
+		SellerAccount farmer = getSupplierAccount(dto.login());
+		String token = jwtUtils.generateToken(farmer.getLogin(), farmer.getEmail(), farmer.getRoles());
+		log.info("Login successful, token generated for user: {}", dto.login());
+		return new TokenResponseDto(token);
+	}
+
 	@Transactional
 	@Override
 	@PreAuthorize("hasRole('ADMIN')")
@@ -78,13 +89,13 @@ public class SellerService implements ISellerManagement {
 
 		return SellerResponseDto.build(farmer);
 	}
-	
+
 	private SellerAccount getSupplierAccount(String login) {
 		return repo.findByLogin(login).orElseThrow(() -> new UserNotFoundException(login));
 	}
 
 	@Override
-    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
+	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public SellerResponseDto getUser(String login) {
 		SellerAccount farmer = getSupplierAccount(login);
 		return SellerResponseDto.build(farmer);
@@ -92,47 +103,44 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
+	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updatePassword(String login, String oldPassword, String newPassword) {
-	    log.info("Attempting password update for supplier: {}", login);
-	    if (newPassword == null || !isPasswordValid(newPassword)) {
-	        log.warn("Invalid new password provided for user: {}", login);
-	        throw new PasswordNotValidException("Invalid password format");
-	    }
-	    SellerAccount supplier = getSupplierAccount(login);
-	   
-	    if (!encoder.matches(oldPassword, supplier.getHash())) {
-	        log.warn("Incorrect old password for supplier: {}", login);
-	        throw new PasswordNotValidException("Incorrect old password");
-	    }
+		log.info("Attempting password update for supplier: {}", login);
+		if (newPassword == null || !isPasswordValid(newPassword)) {
+			log.warn("Invalid new password provided for user: {}", login);
+			throw new PasswordNotValidException("Invalid password format");
+		}
+		SellerAccount supplier = getSupplierAccount(login);
 
-	    log.info("Old password verified for supplier: {}", login);
-	    if (isPasswordFromLast(newPassword, supplier.getLastHash())) {
-	        log.warn("New password was previously used for supplier: {}", login);
-	        throw new PasswordNotValidException("New password should not match the previous ones");
-	    }
-	    List<String> lastHash = supplier.getLastHash();
-	    if (lastHash.size() == n_last_hash) {
-	        lastHash.remove(0); 
-	    }
-	    lastHash.add(supplier.getHash());
-	    supplier.setHash(encoder.encode(newPassword));
-	    supplier.setActivationDate(LocalDateTime.now());
-	    repo.save(supplier);
-	    log.info("Password updated successfully for supplier: {}", login);
-	    return true;
+		if (!encoder.matches(oldPassword, supplier.getHash())) {
+			log.warn("Incorrect old password for supplier: {}", login);
+			throw new PasswordNotValidException("Incorrect old password");
+		}
+
+		log.info("Old password verified for supplier: {}", login);
+		if (isPasswordFromLast(newPassword, supplier.getLastHash())) {
+			log.warn("New password was previously used for supplier: {}", login);
+			throw new PasswordNotValidException("New password should not match the previous ones");
+		}
+		List<String> lastHash = supplier.getLastHash();
+		if (lastHash.size() == n_last_hash) {
+			lastHash.remove(0);
+		}
+		lastHash.add(supplier.getHash());
+		supplier.setHash(encoder.encode(newPassword));
+		supplier.setActivationDate(LocalDateTime.now());
+		repo.save(supplier);
+		log.info("Password updated successfully for supplier: {}", login);
+		return true;
 	}
-
-
 
 	private boolean isPasswordFromLast(String newPassword, List<String> lastHash) {
-	    return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
+		return lastHash.stream().anyMatch(p -> encoder.matches(newPassword, p));
 	}
-
 
 	@Transactional
 	@Override
-    @PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
+	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updateUser(String login, SellerRequestDto user) {
 
 		SellerAccount farmer = getSupplierAccount(login);
