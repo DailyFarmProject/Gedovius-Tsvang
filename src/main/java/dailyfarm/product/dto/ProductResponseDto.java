@@ -2,7 +2,7 @@ package dailyfarm.product.dto;
 
 import java.time.LocalDate;
 
-import dailyfarm.product.entity.Product;
+import dailyfarm.product.entity.product.Product;
 
 public record ProductResponseDto(
 		Long id,
@@ -11,8 +11,7 @@ public record ProductResponseDto(
 		double weight,
 		String category,
 		String imageUrl,
-		String farmerName,
-		String farmName,
+		String sellerName,
 		LocalDate productionDate,
 		LocalDate expiryDate,
 		String location
@@ -20,8 +19,8 @@ public record ProductResponseDto(
 public static ProductResponseDto build(Product product) {
 	return new ProductResponseDto(product.getId(), product.getName(),
 			product.getPrice(), product.getWeight(), product.getCategory(),
-			product.getImageUrl(), product.getFarmerName(),
-			product.getFarmName(), product.getProductionDate(), product.getExpiryDate(), product.getLocation());
+			product.getImageUrl(), product.getSeller().getCompanyName(),
+		 product.getProductionDate(), product.getExpiryDate(), product.getSeller().getCompanyAddress());
 	
 }
 }

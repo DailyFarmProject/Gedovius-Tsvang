@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import dailyfarm.accounting.dto.seller.SellerRequestDto;
 import dailyfarm.accounting.entity.UserAccount;
-import dailyfarm.product.entity.Product;
+import dailyfarm.product.entity.product.Product;
 
 @Getter
 @Setter

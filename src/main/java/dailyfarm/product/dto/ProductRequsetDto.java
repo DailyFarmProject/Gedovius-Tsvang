@@ -8,11 +8,8 @@ public record ProductRequsetDto(
 		double weight,
 		String category,
 		String imageUrl,
-		String farmerName,
-		String farmName,
 		LocalDate productionDate,
-		LocalDate expiryDate,
-		String location
+		LocalDate expiryDate
 		) {
 
 }
