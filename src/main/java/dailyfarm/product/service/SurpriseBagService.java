@@ -4,7 +4,6 @@ import org.springframework.stereotype.Service;
 
 import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.accounting.repository.SurpriseBagRepository;
-import dailyfarm.accounting.service.seller.SellerService;
 import dailyfarm.product.dto.SurpriseBagRequestDto;
 import dailyfarm.product.dto.SurpriseBagResponseDto;
 import dailyfarm.product.entity.surprisebag.SurpriseBag;
@@ -18,13 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 public class SurpriseBagService {
 
 	private final SurpriseBagRepository repo;
-    private final SellerService sellerService;
     
     @Transactional
-    public SurpriseBagResponseDto addSurpriseBag(SurpriseBagRequestDto request, String sellerLogin) {
-        log.info("Adding SurpriseBag by seller: {}", sellerLogin);
-
-        SellerAccount seller = sellerService.getSellerAccount(sellerLogin);
+    public SurpriseBagResponseDto addSurpriseBag(SurpriseBagRequestDto request, SellerAccount seller) {
+        log.info("Adding SurpriseBag by seller: {}", seller.getLogin());
         
         SurpriseBag surpriseBag = SurpriseBag.of(request, seller);
         
@@ -41,13 +37,12 @@ public class SurpriseBagService {
     }
 
     @Transactional
-    public void deleteSurpriseBag(Long bagId, String sellerLogin) {
-        log.info("Deleting SurpriseBag ID={} by seller: {}", bagId, sellerLogin);
-
+    public void deleteSurpriseBag(Long bagId, SellerAccount seller) {
+        log.info("Deleting SurpriseBag ID={} by seller: {}", bagId, seller.getLogin());
         SurpriseBag surpriseBag = repo.findById(bagId)
-            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found with ID: " + bagId));
+            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag with ID: " + bagId + " not found"));
 
-        if (!surpriseBag.getSeller().getLogin().equals(sellerLogin)) {
+        if (!surpriseBag.getSeller().getLogin().equals(seller.getLogin())) {
             throw new IllegalStateException("Only the seller who created the SurpriseBag can delete it");
         }
 
@@ -64,12 +59,12 @@ public class SurpriseBagService {
     }
 
     @Transactional
-    public SurpriseBagResponseDto updateSurpriseBag(Long bagId, SurpriseBagRequestDto request, String sellerLogin) {
-        log.info("Updating SurpriseBag ID={} by seller: {}", bagId, sellerLogin);
+    public SurpriseBagResponseDto updateSurpriseBag(Long bagId, SurpriseBagRequestDto request, SellerAccount seller) {
+        log.info("Updating SurpriseBag ID={} by seller: {}", bagId, seller.getLogin());
         SurpriseBag surpriseBag = repo.findById(bagId)
-            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found with ID: " + bagId));
+            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag with ID: " + bagId + " not found"));
 
-           if (!surpriseBag.getSeller().getLogin().equals(sellerLogin)) {
+           if (!surpriseBag.getSeller().getLogin().equals(seller.getLogin())) {
             throw new IllegalStateException("Only the seller who created the SurpriseBag can update it");
         }
 
@@ -78,7 +73,8 @@ public class SurpriseBagService {
         else if (request.price() <= 0) throw new IllegalArgumentException("Price must be greater than 0");
         if (request.description() != null) surpriseBag.setDescription(request.description());
         if (request.quantity() >= 0) surpriseBag.setQuantity(request.quantity());
-        else throw new IllegalArgumentException("Quantity cannot be negative");
+        else 
+        	throw new IllegalArgumentException("Quantity cannot be negative");
         if (request.imageUrl() != null) surpriseBag.setImageUrl(request.imageUrl());
 
         SurpriseBag updatedBag = repo.save(surpriseBag);

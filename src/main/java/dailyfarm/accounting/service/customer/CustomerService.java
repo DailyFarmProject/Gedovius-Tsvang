@@ -249,7 +249,6 @@ public class CustomerService implements ICustomerManagement {
 		log.info("Customer {} adding SurpriseBag ID={} to cart", login, bagId);
 
 		CustomerAccount customer = getCustomerAccount(login);
-
 		SurpriseBag surpriseBag = surpriceBagRepo.findById(bagId)
 				.orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found with ID: " + bagId));
 

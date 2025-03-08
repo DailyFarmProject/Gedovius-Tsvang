@@ -249,13 +249,15 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	public SurpriseBagResponseDto addSurpriseBag(SurpriseBagRequestDto request, String sellerLogin) {
-		return surpriseBagService.addSurpriseBag(request, sellerLogin);
+		SellerAccount seller = getSellerAccount(sellerLogin);
+		return surpriseBagService.addSurpriseBag(request, seller);
 	}
 
 	@Transactional
 	public void deleteSurpriseBag(Long bagId, String sellerLogin) {
-		surpriseBagService.deleteSurpriseBag(bagId, sellerLogin);
-	}
+		SellerAccount seller = getSellerAccount(sellerLogin);
+        surpriseBagService.deleteSurpriseBag(bagId, seller);
+    }
 
 	@Transactional
 	public SurpriseBagResponseDto getSurpriseBag(Long bagId) {
@@ -264,7 +266,8 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	public SurpriseBagResponseDto updateSurpriseBag(Long bagId, SurpriseBagRequestDto request, String sellerLogin) {
-		return surpriseBagService.updateSurpriseBag(bagId, request, sellerLogin);
-	}
+		SellerAccount seller = getSellerAccount(sellerLogin);
+        return surpriseBagService.updateSurpriseBag(bagId, request, seller);
+    }
 
 }
