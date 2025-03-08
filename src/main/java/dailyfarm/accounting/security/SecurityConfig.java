@@ -47,22 +47,27 @@ public class SecurityConfig {
 				.addFilterBefore(authFilter,UsernamePasswordAuthenticationFilter.class);
 
 		http.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/test", "/customer/test").permitAll()
-				.requestMatchers("/customer/auth/**").permitAll()
-				.requestMatchers(HttpMethod.POST, "/supplier/register", "/customer/register").permitAll()
-				.requestMatchers("/supplier/revoke/*", "/customer/revoke/*", "/supplier/activate/*",
+				//.requestMatchers("/test", "/customer/test").permitAll()
+				.requestMatchers("/customer/auth/**", "/seller/auth/**").permitAll()
+				.requestMatchers(HttpMethod.POST, "/seller/register", "/customer/register").permitAll()
+				.requestMatchers("/seller/revoke/*", "/customer/revoke/*", "/seller/activate/*",
 						"/customer/activate/*").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/customer/roles/{login}", "/supplier/roles/{login}").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/customer/password/{login}", "/supplier/password/{login}").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/customer/activation/{login}", "/supplier/activation/{login}").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.DELETE, "/supplier/{login}", "/customer/{login}").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.PUT, "/supplier/{login}", "/customer/{login}")
+				.requestMatchers(HttpMethod.GET, "/customer/roles/{login}", "/seller/roles/{login}").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/customer/password/{login}", "/seller/password/{login}").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/customer/activation/{login}", "/seller/activation/{login}").hasRole("ADMIN")
+				.requestMatchers(HttpMethod.DELETE, "/seller/{login}", "/customer/{login}").hasRole("ADMIN")
+				.requestMatchers(HttpMethod.PUT, "/seller/{login}", "/customer/{login}")
 				.access(new WebExpressionAuthorizationManager("#login == authentication.name or hasRole('ADMIN')"))
-				.requestMatchers(HttpMethod.GET, "/supplier/{login}", "/customer/{login}")
+				.requestMatchers(HttpMethod.GET, "/seller/{login}", "/customer/{login}")
 				.access(new WebExpressionAuthorizationManager("#login == authentication.name or hasRole('ADMIN')"))
-				.requestMatchers(HttpMethod.PUT, "/customer/password", "/supplier/password").authenticated()
+				.requestMatchers(HttpMethod.PUT, "/customer/password", "/seller/password").authenticated()
+				.requestMatchers(HttpMethod.POST, "/seller/surprise-bag").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.DELETE, "/seller/surprise-bag/**").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.GET, "/seller/surprise-bag/**").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.PUT, "/seller/surprise-bag/**").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.POST, "/customer/surprise-bag/**").hasRole("CUSTOMER")
+			    .requestMatchers(HttpMethod.GET, "/customer/surprise-bag/**").hasRole("CUSTOMER")
 				.anyRequest().authenticated());
-
 		return http.build();
 	}
 
