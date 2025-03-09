@@ -21,7 +21,9 @@ import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.seller.SellerRequestDto;
 import dailyfarm.accounting.dto.seller.SellerResponseDto;
-import dailyfarm.accounting.service.seller.ISellerManagement;
+import dailyfarm.accounting.service.seller.SellerService;
+import dailyfarm.product.dto.SurpriseBagRequestDto;
+import dailyfarm.product.dto.SurpriseBagResponseDto;
 import jakarta.validation.Valid;
 
 @RestController
@@ -29,17 +31,17 @@ import jakarta.validation.Valid;
 public class SellerController {
 
 	@Autowired
-	private ISellerManagement service;
+	private SellerService service;
 
 	@PostMapping("/register")
 	public SellerResponseDto registration(@RequestBody SellerRequestDto supplier) {
 		return service.registration(supplier);
 	}
-	
+
 	@PostMapping("/auth/login")
 	public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
 		TokenResponseDto tokenResponse = service.login(dto);
-        return ResponseEntity.ok(tokenResponse);
+		return ResponseEntity.ok(tokenResponse);
 	}
 
 	@DeleteMapping("/{login}")
@@ -52,23 +54,19 @@ public class SellerController {
 		return service.getUser(login);
 	}
 
-    @PutMapping("/password")
-    public ResponseEntity<String> updatePassword(
-        @RequestHeader("Old-Password") String oldPassword,
-        @RequestHeader("New-Password") String newPassword,
-        Principal principal
-    ) {
-        String login = principal.getName();
-       
+	@PutMapping("/password")
+	public ResponseEntity<String> updatePassword(@RequestHeader("Old-Password") String oldPassword,
+			@RequestHeader("New-Password") String newPassword, Principal principal) {
+		String login = principal.getName();
 
-        boolean updated = service.updatePassword(login, oldPassword, newPassword);
+		boolean updated = service.updatePassword(login, oldPassword, newPassword);
 
-        if (updated) {
-            return ResponseEntity.ok("Password updated successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid old password or permission denied");
-        }
-    }
+		if (updated) {
+			return ResponseEntity.ok("Password updated successfully");
+		} else {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid old password or permission denied");
+		}
+	}
 
 	@PutMapping("/{login}")
 	public boolean updateUser(@PathVariable String login, @RequestBody SellerRequestDto user) {
@@ -109,4 +107,31 @@ public class SellerController {
 	public LocalDateTime getActivationDate(@PathVariable String login) {
 		return service.getActivationDate(login);
 	}
+
+	@PostMapping("/surprise-bag")
+	public ResponseEntity<SurpriseBagResponseDto> addSurpriseBag(@RequestBody SurpriseBagRequestDto request,
+			Principal principal) {
+		SurpriseBagResponseDto response = service.addSurpriseBag(request, principal.getName());
+		return ResponseEntity.ok(response);
+	}
+
+	@DeleteMapping("/surprise-bag/{bagId}")
+	public ResponseEntity<Void> deleteSurpriseBag(@PathVariable Long bagId, Principal principal) {
+		service.deleteSurpriseBag(bagId, principal.getName());
+		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/surprise-bag/{bagId}")
+	public ResponseEntity<SurpriseBagResponseDto> getSurpriseBag(@PathVariable Long bagId) {
+		SurpriseBagResponseDto response = service.getSurpriseBag(bagId);
+		return ResponseEntity.ok(response);
+	}
+
+	@PutMapping("/surprise-bag/{bagId}")
+	public ResponseEntity<SurpriseBagResponseDto> updateSurpriseBag(@PathVariable Long bagId,
+			@RequestBody SurpriseBagRequestDto request, Principal principal) {
+		SurpriseBagResponseDto response = service.updateSurpriseBag(bagId, request, principal.getName());
+		return ResponseEntity.ok(response);
+	}
+
 }
