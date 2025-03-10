@@ -26,8 +26,11 @@ import dailyfarm.accounting.exceptions.UserExistsException;
 import dailyfarm.accounting.exceptions.UserNotFoundException;
 import dailyfarm.accounting.repository.seller.SellerRepository;
 import dailyfarm.accounting.security.JwtUtils;
+import dailyfarm.product.dto.ProductRequsetDto;
+import dailyfarm.product.dto.ProductResponseDto;
 import dailyfarm.product.dto.SurpriseBagRequestDto;
 import dailyfarm.product.dto.SurpriseBagResponseDto;
+import dailyfarm.product.service.ProductService;
 import dailyfarm.product.service.SurpriseBagService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,7 @@ public class SellerService implements ISellerManagement {
 	private final JwtUtils jwtUtils;
 	private final AuthenticationManager authManager;
 	private final SurpriseBagService surpriseBagService;
+	private final ProductService productService;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -269,5 +273,24 @@ public class SellerService implements ISellerManagement {
 		SellerAccount seller = getSellerAccount(sellerLogin);
         return surpriseBagService.updateSurpriseBag(bagId, request, seller);
     }
+	@Transactional
+	public ProductResponseDto addProduct(ProductRequsetDto request, String sellerLogin) {
+		SellerAccount seller = getSellerAccount(sellerLogin);
+		return productService.addProduct(request, seller);
+	}
+	@Transactional
+	public void deleteProduct(Long productId, String sellerLogin) {
+		SellerAccount seller = getSellerAccount(sellerLogin);
+		productService.deletProduct(productId, seller);
+	}
+	@Transactional
+	public ProductResponseDto getProduct(Long productId) {
+		return productService.getProduct(productId);
+	}
+	@Transactional
+	public ProductResponseDto updateProduct(Long productId, ProductRequsetDto request, String sellerlogin) {
+		SellerAccount seller = getSellerAccount(sellerlogin);
+		return productService.updateProduct(productId, request, seller);
+	}
 
 }

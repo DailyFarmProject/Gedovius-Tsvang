@@ -3,10 +3,10 @@ package dailyfarm.product.service;
 import org.springframework.stereotype.Service;
 
 import dailyfarm.accounting.entity.seller.SellerAccount;
-import dailyfarm.accounting.repository.SurpriseBagRepository;
 import dailyfarm.product.dto.SurpriseBagRequestDto;
 import dailyfarm.product.dto.SurpriseBagResponseDto;
 import dailyfarm.product.entity.surprisebag.SurpriseBag;
+import dailyfarm.product.repository.SurpriseBagRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

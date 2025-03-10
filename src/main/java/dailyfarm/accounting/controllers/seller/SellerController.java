@@ -22,8 +22,6 @@ import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.seller.SellerRequestDto;
 import dailyfarm.accounting.dto.seller.SellerResponseDto;
 import dailyfarm.accounting.service.seller.SellerService;
-import dailyfarm.product.dto.SurpriseBagRequestDto;
-import dailyfarm.product.dto.SurpriseBagResponseDto;
 import jakarta.validation.Valid;
 
 @RestController
@@ -108,30 +106,5 @@ public class SellerController {
 		return service.getActivationDate(login);
 	}
 
-	@PostMapping("/surprise-bag")
-	public ResponseEntity<SurpriseBagResponseDto> addSurpriseBag(@RequestBody SurpriseBagRequestDto request,
-			Principal principal) {
-		SurpriseBagResponseDto response = service.addSurpriseBag(request, principal.getName());
-		return ResponseEntity.ok(response);
-	}
-
-	@DeleteMapping("/surprise-bag/{bagId}")
-	public ResponseEntity<Void> deleteSurpriseBag(@PathVariable Long bagId, Principal principal) {
-		service.deleteSurpriseBag(bagId, principal.getName());
-		return ResponseEntity.noContent().build();
-	}
-
-	@GetMapping("/surprise-bag/{bagId}")
-	public ResponseEntity<SurpriseBagResponseDto> getSurpriseBag(@PathVariable Long bagId) {
-		SurpriseBagResponseDto response = service.getSurpriseBag(bagId);
-		return ResponseEntity.ok(response);
-	}
-
-	@PutMapping("/surprise-bag/{bagId}")
-	public ResponseEntity<SurpriseBagResponseDto> updateSurpriseBag(@PathVariable Long bagId,
-			@RequestBody SurpriseBagRequestDto request, Principal principal) {
-		SurpriseBagResponseDto response = service.updateSurpriseBag(bagId, request, principal.getName());
-		return ResponseEntity.ok(response);
-	}
 
 }

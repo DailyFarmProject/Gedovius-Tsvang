@@ -67,6 +67,10 @@ public class SecurityConfig {
 			    .requestMatchers(HttpMethod.PUT, "/seller/surprise-bag/**").hasRole("SELLER")
 			    .requestMatchers(HttpMethod.POST, "/customer/surprise-bag/**").hasRole("CUSTOMER")
 			    .requestMatchers(HttpMethod.GET, "/customer/surprise-bag/**").hasRole("CUSTOMER")
+			    .requestMatchers(HttpMethod.POST,"/seller/product").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.DELETE,"/seller/product/**").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.GET,"/seller/product/**").hasRole("SELLER")
+			    .requestMatchers(HttpMethod.PUT,"/seller/product/**").hasRole("SELLER")
 				.anyRequest().authenticated());
 		return http.build();
 	}
