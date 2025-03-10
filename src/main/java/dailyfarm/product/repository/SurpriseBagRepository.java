@@ -1,4 +1,4 @@
-package dailyfarm.accounting.repository;
+package dailyfarm.product.repository;
 
 import dailyfarm.product.entity.surprisebag.SurpriseBag;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -15,6 +15,7 @@ import dailyfarm.accounting.entity.admin.AdminAccount;
 import dailyfarm.accounting.entity.customer.CustomerAccount;
 import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.accounting.repository.admin.AdminRepository;
+import dailyfarm.accounting.repository.customer.CustomerRepository;
 import dailyfarm.accounting.repository.seller.SellerRepository;
 
 
@@ -22,7 +23,7 @@ import dailyfarm.accounting.repository.seller.SellerRepository;
 public class AuthenticationConfiguration implements UserDetailsService {
 
 	@Autowired
-	private dailyfarm.accounting.repository.customer.CustomerRepository customerRepo;
+	private CustomerRepository customerRepo;
 
 	@Autowired
 	private SellerRepository sellerRepo;
