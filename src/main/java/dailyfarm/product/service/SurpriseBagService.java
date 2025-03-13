@@ -1,13 +1,17 @@
 package dailyfarm.product.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.product.dto.SurpriseBagRequestDto;
 import dailyfarm.product.dto.SurpriseBagResponseDto;
 import dailyfarm.product.entity.surprisebag.SurpriseBag;
 import dailyfarm.product.repository.SurpriseBagRepository;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,13 +27,6 @@ public class SurpriseBagService {
         log.info("Adding SurpriseBag by seller: {}", seller.getLogin());
         
         SurpriseBag surpriseBag = SurpriseBag.of(request, seller);
-        
-        if (request.price() <= 0) {
-            throw new IllegalArgumentException("Price must be greater than 0");
-        }
-        if (request.quantity() < 0) {
-            throw new IllegalArgumentException("Quantity cannot be negative");
-        }
 
         SurpriseBag savedBag = repo.save(surpriseBag);
         log.info("SurpriseBag added successfully: ID={}", savedBag.getId());
@@ -50,7 +47,7 @@ public class SurpriseBagService {
         log.info("SurpriseBag deleted successfully: ID={}", bagId);
     }
     
-    @Transactional
+    @Transactional(readOnly = true)
     public SurpriseBagResponseDto getSurpriseBag(Long bagId) {
         log.info("Fetching SurpriseBag ID={}", bagId);
         SurpriseBag surpriseBag = repo.findById(bagId)
@@ -81,4 +78,46 @@ public class SurpriseBagService {
         log.info("SurpriseBag updated successfully: ID={}", updatedBag.getId());
         return SurpriseBagResponseDto.build(updatedBag);
     }
+    
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> getAllSurpriseBags() {
+        log.info("Fetching all SurpriseBags");
+        List<SurpriseBag> surpriseBags = repo.findAll();
+        log.info("Found {} SurpriseBags", surpriseBags.size());
+        return surpriseBags.stream()
+            .map(SurpriseBagResponseDto::build)
+            .collect(Collectors.toList());
+ }
+    
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findByBagName(String name) {
+        log.info("Fetching SurpriseBags by name: {}", name);
+        List<SurpriseBag> surpriseBags = repo.findByNameContainingIgnoreCase(name);
+        log.info("Found {} SurpriseBags with name containing '{}'", surpriseBags.size(), name);
+        return surpriseBags.stream()
+            .map(SurpriseBagResponseDto::build)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findSurpriseBagsByPriceRange(Double minPrice, Double maxPrice) {
+        log.info("Fetching SurpriseBags by price range: {} - {}", minPrice, maxPrice);
+        List<SurpriseBag> surpriseBags = repo.findByPriceBetween(minPrice, maxPrice);
+        log.info("Found {} SurpriseBags with price between {} and {}", surpriseBags.size(), minPrice, maxPrice);
+        return surpriseBags.stream()
+            .map(SurpriseBagResponseDto::build)
+            .collect(Collectors.toList());
+    }
+   
+    
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findBySeller(String sellerLogin) {
+        log.info("Fetching SurpriseBags by seller: {}", sellerLogin);
+        List<SurpriseBag> surpriseBags = repo.findBySellerLogin(sellerLogin);
+        log.info("Found {} SurpriseBags by seller '{}'", surpriseBags.size(), sellerLogin);
+        return surpriseBags.stream()
+            .map(SurpriseBagResponseDto::build)
+            .collect(Collectors.toList());
+    }
+    
 }
