@@ -32,7 +32,7 @@ import dailyfarm.product.dto.SurpriseBagRequestDto;
 import dailyfarm.product.dto.SurpriseBagResponseDto;
 import dailyfarm.product.service.ProductService;
 import dailyfarm.product.service.SurpriseBagService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -90,7 +90,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public SellerResponseDto removeUser(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		repo.deleteByLogin(login);
@@ -263,7 +262,7 @@ public class SellerService implements ISellerManagement {
         surpriseBagService.deleteSurpriseBag(bagId, seller);
     }
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public SurpriseBagResponseDto getSurpriseBag(Long bagId) {
 		return surpriseBagService.getSurpriseBag(bagId);
 	}
@@ -273,6 +272,28 @@ public class SellerService implements ISellerManagement {
 		SellerAccount seller = getSellerAccount(sellerLogin);
         return surpriseBagService.updateSurpriseBag(bagId, request, seller);
     }
+	
+	@Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> getAllSurpriseBags() {
+        return surpriseBagService.getAllSurpriseBags();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findSurpriseBagsByName(String name) {
+        return surpriseBagService.findByBagName(name);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findSurpriseBagsByPriceRange(Double minPrice, Double maxPrice) {
+        return surpriseBagService.findSurpriseBagsByPriceRange(minPrice, maxPrice);
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findBySeller(String sellerLogin) {
+        return surpriseBagService.findBySeller(sellerLogin);
+    }
+
 	@Transactional
 	public ProductResponseDto addProduct(ProductRequsetDto request, String sellerLogin) {
 		SellerAccount seller = getSellerAccount(sellerLogin);
