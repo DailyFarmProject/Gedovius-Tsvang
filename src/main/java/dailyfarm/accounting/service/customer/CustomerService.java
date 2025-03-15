@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
@@ -17,6 +19,7 @@ import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.dto.customer.CustomerResponseDto;
 import dailyfarm.accounting.entity.customer.CustomerAccount;
+import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.accounting.exceptions.AccountActivationException;
 import dailyfarm.accounting.exceptions.AccountRevokeException;
 import dailyfarm.accounting.exceptions.PasswordNotValidException;
@@ -25,12 +28,8 @@ import dailyfarm.accounting.exceptions.RoleNotExistsException;
 import dailyfarm.accounting.exceptions.UserExistsException;
 import dailyfarm.accounting.exceptions.UserNotFoundException;
 import dailyfarm.accounting.repository.customer.CustomerRepository;
+import dailyfarm.accounting.repository.seller.SellerRepository;
 import dailyfarm.accounting.security.JwtUtils;
-import dailyfarm.product.dto.SurpriseBagResponseDto;
-import dailyfarm.product.entity.surprisebag.SurpriseBag;
-import dailyfarm.product.repository.SurpriseBagRepository;
-import dailyfarm.product.service.SurpriseBagService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,11 +39,10 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomerService implements ICustomerManagement {
 
 	private final CustomerRepository customerRepo;
-	private final SurpriseBagRepository surpriceBagRepo;
+	private final SellerRepository sellerRepo;
 	private final PasswordEncoder encoder;
 	private final JwtUtils jwtUtils;
 	private final AuthenticationManager authManager;
-	private final SurpriseBagService surpriseBagService;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -92,7 +90,6 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public CustomerResponseDto removeUser(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		customerRepo.deleteByLogin(login);
@@ -100,7 +97,6 @@ public class CustomerService implements ICustomerManagement {
 	}
 
 	@Override
-	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public CustomerResponseDto getUser(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return CustomerResponseDto.build(client);
@@ -108,7 +104,6 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updatePassword(String login, String oldPassword, String newPassword) {
 		if (newPassword == null || !isPasswordValid(newPassword)) {
 			throw new PasswordNotValidException("Invalid new password: " + newPassword);
@@ -170,7 +165,6 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean revokeAccount(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		if (client.isRevoked()) {
@@ -183,7 +177,6 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean activateAccount(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		if (!client.isRevoked())
@@ -195,7 +188,6 @@ public class CustomerService implements ICustomerManagement {
 	}
 
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public RolesResponseDto getRoles(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : new RolesResponseDto(login, client.getRoles());
@@ -203,7 +195,6 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean addRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
 
@@ -218,7 +209,6 @@ public class CustomerService implements ICustomerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean removeRole(String login, String role) {
 		CustomerAccount client = getCustomerAccount(login);
 
@@ -231,33 +221,19 @@ public class CustomerService implements ICustomerManagement {
 	}
 
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public String getPasswordHash(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : client.getHash();
 	}
 
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public LocalDateTime getActivationDate(String login) {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : client.getActivationDate();
 	}
-
-	@Transactional
-	public SurpriseBagResponseDto addSurpriseBagToCart(Long bagId, String login) {
-		log.info("Customer {} adding SurpriseBag ID={} to cart", login, bagId);
-
-		CustomerAccount customer = getCustomerAccount(login);
-		SurpriseBag surpriseBag = surpriceBagRepo.findById(bagId)
-				.orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found with ID: " + bagId));
-
-		log.info("SurpriseBag ID={} added to cart for customer: {}", bagId, login);
-		return SurpriseBagResponseDto.build(surpriseBag);
-	}
-
-	@Transactional
-	public SurpriseBagResponseDto getSurpriseBag(Long bagId) {
-		return surpriseBagService.getSurpriseBag(bagId);
-	}
+	
+	public ResponseEntity<List<SellerAccount>> getAllSellers() {
+		 List<SellerAccount> sellers = sellerRepo.findAll();
+	        return ResponseEntity.ok(sellers);
+	}	
 }

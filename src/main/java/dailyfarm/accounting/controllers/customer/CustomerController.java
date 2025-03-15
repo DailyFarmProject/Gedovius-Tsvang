@@ -2,10 +2,12 @@ package dailyfarm.accounting.controllers.customer;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,8 +23,8 @@ import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.dto.customer.CustomerResponseDto;
+import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.accounting.service.customer.CustomerService;
-import dailyfarm.product.dto.SurpriseBagResponseDto;
 import jakarta.validation.Valid;
 
 @RestController
@@ -44,11 +46,13 @@ public class CustomerController {
 	}
 
 	@DeleteMapping("/{login}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public CustomerResponseDto remove(@PathVariable String login) {
 		return service.removeUser(login);
 	}
 
 	@GetMapping("/{login}")
+	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public CustomerResponseDto getUser(@PathVariable String login) {
 		return service.getUser(login);
 	}
@@ -66,55 +70,55 @@ public class CustomerController {
 	}
 
 	@PutMapping("/{login}")
+	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updateUser(@PathVariable String login, @RequestBody CustomerRequestDto user) {
 		return service.updateUser(login, user);
 	}
 
 	@PutMapping("/revoke/{login}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean revokeAccount(@PathVariable String login) {
 		return service.revokeAccount(login);
 	}
 
 	@PutMapping("/activate/{login}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean activateAccount(@PathVariable String login) {
 		return service.activateAccount(login);
 	}
 
 	@GetMapping("/roles/{login}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public RolesResponseDto getRoles(@PathVariable String login) {
 		return service.getRoles(login);
 	}
 
 	@PutMapping("/{login}/role/{role}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean addRole(@PathVariable String login, @PathVariable String role) {
 		return service.addRole(login, role);
 	}
 
 	@DeleteMapping("/{login}/role/{role}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public boolean removeRole(@PathVariable String login, @PathVariable String role) {
 		return service.removeRole(login, role);
 	}
 
 	@GetMapping("/password/{login}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public String getPasswordHash(@PathVariable String login) {
 		return service.getPasswordHash(login);
 	}
 
 	@GetMapping("/activation/{login}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public LocalDateTime getActivationDate(@PathVariable String login) {
 		return service.getActivationDate(login);
 	}
-
-	@PostMapping("/surprise-bag/{bagId}")
-	public ResponseEntity<SurpriseBagResponseDto> addSurpriseBagToCart(@PathVariable Long bagId, Principal principal) {
-		SurpriseBagResponseDto response = service.addSurpriseBagToCart(bagId, principal.getName());
-		return ResponseEntity.ok(response);
-	}
-
-	@GetMapping("/surprise-bag/{bagId}")
-	public ResponseEntity<SurpriseBagResponseDto> getSurpriseBag(@PathVariable Long bagId) {
-		SurpriseBagResponseDto response = service.getSurpriseBag(bagId);
-		return ResponseEntity.ok(response);
-	}
-
+	
+	 @GetMapping("/sellers")
+	    public ResponseEntity<List<SellerAccount>> getAllSellers() {
+	     return service.getAllSellers();
+	    }
 }

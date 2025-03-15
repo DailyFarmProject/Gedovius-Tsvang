@@ -1,5 +1,6 @@
 package dailyfarm.product.repository;
 
+import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.product.entity.surprisebag.SurpriseBag;
 
 import java.util.List;
@@ -12,5 +13,5 @@ public interface SurpriseBagRepository extends JpaRepository<SurpriseBag, Long> 
 	
 	List<SurpriseBag> findByPriceBetween(Double minPrice, Double maxPrice);
 
-    List<SurpriseBag> findBySellerLogin(String sellerLogin);
-}
+	List<SurpriseBag> findBySeller(SellerAccount seller);
+    }
