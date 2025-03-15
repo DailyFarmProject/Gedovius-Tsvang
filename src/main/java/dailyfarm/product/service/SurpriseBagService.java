@@ -3,15 +3,22 @@ package dailyfarm.product.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dailyfarm.accounting.entity.customer.CustomerAccount;
 import dailyfarm.accounting.entity.seller.SellerAccount;
+import dailyfarm.accounting.repository.customer.CustomerRepository;
+import dailyfarm.accounting.repository.seller.SellerRepository;
+import dailyfarm.order.dto.OrderResponseDto;
+import dailyfarm.order.entity.Order;
+import dailyfarm.order.repository.OrderRepository;
 import dailyfarm.product.dto.SurpriseBagRequestDto;
 import dailyfarm.product.dto.SurpriseBagResponseDto;
 import dailyfarm.product.entity.surprisebag.SurpriseBag;
 import dailyfarm.product.repository.SurpriseBagRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,104 +27,117 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SurpriseBagService {
 
-	private final SurpriseBagRepository repo;
-    
-    @Transactional
-    public SurpriseBagResponseDto addSurpriseBag(SurpriseBagRequestDto request, SellerAccount seller) {
-        log.info("Adding SurpriseBag by seller: {}", seller.getLogin());
+	private final SurpriseBagRepository bagRepo;
+	private final OrderRepository orderRepo;
+	private final SellerRepository sellerRepo;
+	private final CustomerRepository customerRepo;
+
+	@Transactional
+    public SurpriseBagResponseDto addSurpriseBag(SurpriseBagRequestDto request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String sellerLogin = authentication.getName();
+        log.info("Adding SurpriseBag by seller: {}", sellerLogin);
+
+        SellerAccount seller = sellerRepo.findByLogin(sellerLogin)
+            .orElseThrow(() -> new IllegalArgumentException("Seller not found: " + sellerLogin));
         
         SurpriseBag surpriseBag = SurpriseBag.of(request, seller);
-
-        SurpriseBag savedBag = repo.save(surpriseBag);
+        SurpriseBag savedBag = bagRepo.save(surpriseBag);
         log.info("SurpriseBag added successfully: ID={}", savedBag.getId());
         return SurpriseBagResponseDto.build(savedBag);
     }
 
-    @Transactional
-    public void deleteSurpriseBag(Long bagId, SellerAccount seller) {
-        log.info("Deleting SurpriseBag ID={} by seller: {}", bagId, seller.getLogin());
-        SurpriseBag surpriseBag = repo.findById(bagId)
-            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag with ID: " + bagId + " not found"));
+	@Transactional
+	public void deleteSurpriseBag(Long bagId) {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    String sellerLogin = authentication.getName();
+	    log.info("Deleting SurpriseBag with ID: {} by seller: {}", bagId, sellerLogin);
 
-        if (!surpriseBag.getSeller().getLogin().equals(seller.getLogin())) {
-            throw new IllegalStateException("Only the seller who created the SurpriseBag can delete it");
-        }
-
-        repo.delete(surpriseBag);
-        log.info("SurpriseBag deleted successfully: ID={}", bagId);
-    }
+	    SurpriseBag bag = bagRepo.findById(bagId)
+	        .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found: " + bagId));
+	    if (!bag.getSeller().getLogin().equals(sellerLogin)) {
+	        throw new SecurityException("You can only delete your own SurpriseBags");
+	    }
+	    bagRepo.delete(bag);
+	    log.info("SurpriseBag deleted successfully: ID={}", bagId);
+	}
     
-    @Transactional(readOnly = true)
+	@Transactional(readOnly = true)
     public SurpriseBagResponseDto getSurpriseBag(Long bagId) {
-        log.info("Fetching SurpriseBag ID={}", bagId);
-        SurpriseBag surpriseBag = repo.findById(bagId)
-            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found with ID: " + bagId));
-        return SurpriseBagResponseDto.build(surpriseBag);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String login = authentication.getName();
+        log.info("Fetching SurpriseBag with ID: {} for user: {}", bagId, login);
+
+        SurpriseBag bag = bagRepo.findById(bagId)
+            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found: " + bagId));
+        return SurpriseBagResponseDto.build(bag);
     }
 
-    @Transactional
-    public SurpriseBagResponseDto updateSurpriseBag(Long bagId, SurpriseBagRequestDto request, SellerAccount seller) {
-        log.info("Updating SurpriseBag ID={} by seller: {}", bagId, seller.getLogin());
-        SurpriseBag surpriseBag = repo.findById(bagId)
-            .orElseThrow(() -> new IllegalArgumentException("SurpriseBag with ID: " + bagId + " not found"));
+	@Transactional
+	public SurpriseBagResponseDto updateSurpriseBag(Long bagId, SurpriseBagRequestDto request) {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    String sellerLogin = authentication.getName();
+	    log.info("Updating SurpriseBag with ID: {} by seller: {}", bagId, sellerLogin);
 
-           if (!surpriseBag.getSeller().getLogin().equals(seller.getLogin())) {
-            throw new IllegalStateException("Only the seller who created the SurpriseBag can update it");
-        }
+	    SurpriseBag bag = bagRepo.findById(bagId)
+	        .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found: " + bagId));
+	    if (!bag.getSeller().getLogin().equals(sellerLogin)) {
+	        throw new SecurityException("You can only update your own SurpriseBags");
+	    }
 
-        if (request.name() != null) surpriseBag.setName(request.name());
-        if (request.price() > 0) surpriseBag.setPrice(request.price());
-        else if (request.price() <= 0) throw new IllegalArgumentException("Price must be greater than 0");
-        if (request.description() != null) surpriseBag.setDescription(request.description());
-        if (request.quantity() >= 0) surpriseBag.setQuantity(request.quantity());
-        else 
-        	throw new IllegalArgumentException("Quantity cannot be negative");
-        if (request.imageUrl() != null) surpriseBag.setImageUrl(request.imageUrl());
+	    bag.setName(request.name());
+	    bag.setPrice(request.price());
+	    bag.setDescription(request.description());
+	    bag.setQuantity(request.quantity());
+	    bag.setImageUrl(request.imageUrl());
 
-        SurpriseBag updatedBag = repo.save(surpriseBag);
-        log.info("SurpriseBag updated successfully: ID={}", updatedBag.getId());
-        return SurpriseBagResponseDto.build(updatedBag);
-    }
+	    SurpriseBag updatedBag = bagRepo.save(bag);
+	    log.info("SurpriseBag updated successfully: ID={}", updatedBag.getId());
+	    return SurpriseBagResponseDto.build(updatedBag);
+	}
     
-    @Transactional(readOnly = true)
+    
+	@Transactional(readOnly = true)
     public List<SurpriseBagResponseDto> getAllSurpriseBags() {
         log.info("Fetching all SurpriseBags");
-        List<SurpriseBag> surpriseBags = repo.findAll();
-        log.info("Found {} SurpriseBags", surpriseBags.size());
-        return surpriseBags.stream()
-            .map(SurpriseBagResponseDto::build)
-            .collect(Collectors.toList());
- }
-    
-    @Transactional(readOnly = true)
-    public List<SurpriseBagResponseDto> findByBagName(String name) {
-        log.info("Fetching SurpriseBags by name: {}", name);
-        List<SurpriseBag> surpriseBags = repo.findByNameContainingIgnoreCase(name);
-        log.info("Found {} SurpriseBags with name containing '{}'", surpriseBags.size(), name);
-        return surpriseBags.stream()
+        return bagRepo.findAll().stream()
             .map(SurpriseBagResponseDto::build)
             .collect(Collectors.toList());
     }
     
-    @Transactional(readOnly = true)
+	@Transactional(readOnly = true)
     public List<SurpriseBagResponseDto> findSurpriseBagsByPriceRange(Double minPrice, Double maxPrice) {
         log.info("Fetching SurpriseBags by price range: {} - {}", minPrice, maxPrice);
-        List<SurpriseBag> surpriseBags = repo.findByPriceBetween(minPrice, maxPrice);
-        log.info("Found {} SurpriseBags with price between {} and {}", surpriseBags.size(), minPrice, maxPrice);
-        return surpriseBags.stream()
-            .map(SurpriseBagResponseDto::build)
-            .collect(Collectors.toList());
-    }
-   
-    
-    @Transactional(readOnly = true)
-    public List<SurpriseBagResponseDto> findBySeller(String sellerLogin) {
-        log.info("Fetching SurpriseBags by seller: {}", sellerLogin);
-        List<SurpriseBag> surpriseBags = repo.findBySellerLogin(sellerLogin);
-        log.info("Found {} SurpriseBags by seller '{}'", surpriseBags.size(), sellerLogin);
-        return surpriseBags.stream()
+        return bagRepo.findByPriceBetween(minPrice, maxPrice).stream()
             .map(SurpriseBagResponseDto::build)
             .collect(Collectors.toList());
     }
     
+	@Transactional(readOnly = true)
+    public List<SurpriseBagResponseDto> findBySellerCompanyName(String sellerName) {
+        log.info("Fetching SurpriseBags by seller company name: {}", sellerName);
+        SellerAccount seller = sellerRepo.findByCompanyName(sellerName)
+            .orElseThrow(() -> new IllegalArgumentException("Seller not found with company name: " + sellerName));
+        return bagRepo.findBySeller(seller).stream()
+            .map(SurpriseBagResponseDto::build)
+            .collect(Collectors.toList());
+    }
+    
+    
+	@Transactional
+	public OrderResponseDto addSurpriseBagToOrder(Long bagId) {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    String customerLogin = authentication.getName();
+	    log.info("Adding SurpriseBag with ID: {} to order for customer: {}", bagId, customerLogin);
+
+	    CustomerAccount customer = customerRepo.findByLogin(customerLogin)
+	        .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerLogin));
+	    SurpriseBag bag = bagRepo.findById(bagId)
+	        .orElseThrow(() -> new IllegalArgumentException("SurpriseBag not found: " + bagId));
+	    
+	    Order order = Order.of(customer, bag);
+	    Order savedOrder = orderRepo.save(order);
+	    log.info("Order created successfully: ID={}", savedOrder.getId());
+	    return OrderResponseDto.build(savedOrder);
+	}
 }

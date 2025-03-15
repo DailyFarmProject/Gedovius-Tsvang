@@ -21,19 +21,19 @@ import dailyfarm.product.entity.product.Product;
 @Table(name = "sellers")
 public class SellerAccount extends UserAccount {
 
-	@Column(nullable = false, length = 50)
+	@Column(nullable = false, length = 50, unique = true)
 	private String companyName;
 
 	@Column(nullable = false, length = 255)
 	private String companyAddress;
 
-	@Column(nullable = false, length = 20)
+	@Column(nullable = false, length = 20, unique = true)
 	private String taxId;
 
 	@Column(nullable = false, length = 50)
 	private String contactPerson;
 
-	@Column(nullable = false, length = 20)
+	@Column(nullable = false, length = 20, unique = true)
 	private String phone;
 	
 	@OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, orphanRemoval = true)

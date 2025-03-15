@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import dailyfarm.accounting.dto.LoginRequestDto;
 import dailyfarm.accounting.dto.RolesResponseDto;
@@ -28,11 +28,7 @@ import dailyfarm.accounting.repository.seller.SellerRepository;
 import dailyfarm.accounting.security.JwtUtils;
 import dailyfarm.product.dto.ProductRequsetDto;
 import dailyfarm.product.dto.ProductResponseDto;
-import dailyfarm.product.dto.SurpriseBagRequestDto;
-import dailyfarm.product.dto.SurpriseBagResponseDto;
 import dailyfarm.product.service.ProductService;
-import dailyfarm.product.service.SurpriseBagService;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +41,6 @@ public class SellerService implements ISellerManagement {
 	private final PasswordEncoder encoder;
 	private final JwtUtils jwtUtils;
 	private final AuthenticationManager authManager;
-	private final SurpriseBagService surpriseBagService;
 	private final ProductService productService;
 
 	@Value("${password_length:8}")
@@ -60,6 +55,11 @@ public class SellerService implements ISellerManagement {
 		if (repo.findByLogin(user.login()).isPresent()) {
 			throw new UserExistsException(user.login());
 		}
+		
+		if (repo.existsByCompanyName(user.companyName())) {
+            log.warn("Attempt to create seller with existing company name: {}", user.companyName());
+            throw new IllegalArgumentException("Company name '" + user.companyName() + "' is already taken.");
+        }
 		if (!isPasswordValid(user.password()))
 			throw new PasswordNotValidException(user.password());
 
@@ -102,7 +102,6 @@ public class SellerService implements ISellerManagement {
 	}
 
 	@Override
-	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public SellerResponseDto getUser(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		return SellerResponseDto.build(farmer);
@@ -110,7 +109,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updatePassword(String login, String oldPassword, String newPassword) {
 		log.info("Attempting password update for supplier: {}", login);
 		if (newPassword == null || !isPasswordValid(newPassword)) {
@@ -147,7 +145,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
 	public boolean updateUser(String login, SellerRequestDto user) {
 
 		SellerAccount farmer = getSellerAccount(login);
@@ -176,7 +173,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean revokeAccount(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		if (farmer.isRevoked()) {
@@ -189,7 +185,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean activateAccount(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		if (!farmer.isRevoked())
@@ -201,7 +196,6 @@ public class SellerService implements ISellerManagement {
 	}
 
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public RolesResponseDto getRoles(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		return farmer.isRevoked() ? null : new RolesResponseDto(login, farmer.getRoles());
@@ -209,7 +203,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean addRole(String login, String role) {
 		SellerAccount farmer = getSellerAccount(login);
 
@@ -224,7 +217,6 @@ public class SellerService implements ISellerManagement {
 
 	@Transactional
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public boolean removeRole(String login, String role) {
 		SellerAccount farmer = getSellerAccount(login);
 
@@ -237,62 +229,16 @@ public class SellerService implements ISellerManagement {
 	}
 
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public String getPasswordHash(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		return farmer.isRevoked() ? null : farmer.getHash();
 	}
 
 	@Override
-	@PreAuthorize("hasRole('ADMIN')")
 	public LocalDateTime getActivationDate(String login) {
 		SellerAccount farmer = getSellerAccount(login);
 		return farmer.isRevoked() ? null : farmer.getActivationDate();
 	}
-
-	@Transactional
-	public SurpriseBagResponseDto addSurpriseBag(SurpriseBagRequestDto request, String sellerLogin) {
-		SellerAccount seller = getSellerAccount(sellerLogin);
-		return surpriseBagService.addSurpriseBag(request, seller);
-	}
-
-	@Transactional
-	public void deleteSurpriseBag(Long bagId, String sellerLogin) {
-		SellerAccount seller = getSellerAccount(sellerLogin);
-        surpriseBagService.deleteSurpriseBag(bagId, seller);
-    }
-
-	@Transactional(readOnly = true)
-	public SurpriseBagResponseDto getSurpriseBag(Long bagId) {
-		return surpriseBagService.getSurpriseBag(bagId);
-	}
-
-	@Transactional
-	public SurpriseBagResponseDto updateSurpriseBag(Long bagId, SurpriseBagRequestDto request, String sellerLogin) {
-		SellerAccount seller = getSellerAccount(sellerLogin);
-        return surpriseBagService.updateSurpriseBag(bagId, request, seller);
-    }
-	
-	@Transactional(readOnly = true)
-    public List<SurpriseBagResponseDto> getAllSurpriseBags() {
-        return surpriseBagService.getAllSurpriseBags();
-    }
-
-    @Transactional(readOnly = true)
-    public List<SurpriseBagResponseDto> findSurpriseBagsByName(String name) {
-        return surpriseBagService.findByBagName(name);
-    }
-
-    @Transactional(readOnly = true)
-    public List<SurpriseBagResponseDto> findSurpriseBagsByPriceRange(Double minPrice, Double maxPrice) {
-        return surpriseBagService.findSurpriseBagsByPriceRange(minPrice, maxPrice);
-    }
-
-
-    @Transactional(readOnly = true)
-    public List<SurpriseBagResponseDto> findBySeller(String sellerLogin) {
-        return surpriseBagService.findBySeller(sellerLogin);
-    }
 
 	@Transactional
 	public ProductResponseDto addProduct(ProductRequsetDto request, String sellerLogin) {

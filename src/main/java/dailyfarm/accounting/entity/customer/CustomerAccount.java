@@ -4,12 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.entity.UserAccount;
+import dailyfarm.order.entity.Order;
 
 
 
@@ -30,7 +33,7 @@ public class CustomerAccount extends UserAccount {
     @Column(nullable = false, length = 255)
     private String address;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String phone;
     
     @ElementCollection(fetch = FetchType.EAGER)
@@ -40,6 +43,9 @@ public class CustomerAccount extends UserAccount {
     
     @Column(nullable = false)
     private LocalDateTime activationDate = LocalDateTime.now();
+    
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();
     
     @Override
     public Set<String> getRoles() {
