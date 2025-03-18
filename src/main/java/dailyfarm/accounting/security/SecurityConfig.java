@@ -54,13 +54,13 @@ public class SecurityConfig {
 		http.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/customer/auth/**", "/seller/auth/**", "/admin/auth/**", "test/**").permitAll()
 				.requestMatchers(HttpMethod.POST, "/seller/register", "/customer/register").permitAll()
-				
 				.requestMatchers("/seller/revoke/*", "/customer/revoke/*", "/seller/activate/*",
 						"/customer/activate/*").hasRole(ADMIN_ROLE)
 				.requestMatchers(HttpMethod.GET, "/customer/roles/{login}", "/seller/roles/{login}", 
 						"/customer/password/{login}", "/seller/password/{login}",
 						"/customer/activation/{login}", "/seller/activation/{login}").hasRole(ADMIN_ROLE)
 			    .requestMatchers(HttpMethod.GET, "/customer/sellers").hasAnyRole(CUSTOMER_ROLE, ADMIN_ROLE)
+			    .requestMatchers(HttpMethod.GET, "/customer/nearest-sellers").hasAnyRole(CUSTOMER_ROLE, ADMIN_ROLE)
 
 				.requestMatchers(HttpMethod.PUT, "/customer/password", "/seller/password").authenticated()
 				

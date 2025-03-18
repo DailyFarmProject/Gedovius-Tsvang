@@ -2,20 +2,22 @@ package dailyfarm.accounting.entity.customer;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.entity.UserAccount;
 import dailyfarm.order.entity.Order;
 
-
-
+@Slf4j
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,6 +38,9 @@ public class CustomerAccount extends UserAccount {
     @Column(nullable = false, length = 20, unique = true)
     private String phone;
     
+    @Column(columnDefinition = "geometry(Point,4326)", nullable = true)
+    private Point location;
+    
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "customer_roles", joinColumns = @JoinColumn(name = "customer_id"))
     @Column(name = "role")
@@ -46,7 +51,7 @@ public class CustomerAccount extends UserAccount {
     
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Order> orders = new ArrayList<>();
-    
+
     @Override
     public Set<String> getRoles() {
         return roles.stream()
@@ -62,14 +67,26 @@ public class CustomerAccount extends UserAccount {
         this.phone = phone;
         this.roles.add("ROLE_CUSTOMER");
         this.activationDate = LocalDateTime.now();
-        
-        
+        this.location = null;
     }
+
+    public void setCoordinates(double longitude, double latitude) {
+        if (longitude >= -180 && longitude <= 180 && latitude >= -90 && latitude <= 90) {
+            GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING), 4326);
+            Point point = geometryFactory.createPoint(new Coordinate(longitude, latitude));
+            point.setSRID(4326);
+            this.location = point;
+        } else {
+            log.warn("Invalid coordinates: longitude = {}, latitude = {}", longitude, latitude);
+            this.location = null;
+        }
+    }
+
 
     public static CustomerAccount of(CustomerRequestDto dto) {
         return new CustomerAccount(
                 dto.login(),
-                null,
+                null, 
                 dto.email(),
                 dto.firstName(),
                 dto.lastName(),

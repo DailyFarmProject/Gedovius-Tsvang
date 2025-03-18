@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +27,7 @@ import dailyfarm.accounting.exceptions.UserExistsException;
 import dailyfarm.accounting.exceptions.UserNotFoundException;
 import dailyfarm.accounting.repository.seller.SellerRepository;
 import dailyfarm.accounting.security.JwtUtils;
+import dailyfarm.accounting.service.geocoding.GeocodingService;
 import dailyfarm.product.dto.ProductRequsetDto;
 import dailyfarm.product.dto.ProductResponseDto;
 import dailyfarm.product.service.ProductService;
@@ -42,6 +44,7 @@ public class SellerService implements ISellerManagement {
 	private final JwtUtils jwtUtils;
 	private final AuthenticationManager authManager;
 	private final ProductService productService;
+	private final GeocodingService geocodingService;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -60,18 +63,30 @@ public class SellerService implements ISellerManagement {
             log.warn("Attempt to create seller with existing company name: {}", user.companyName());
             throw new IllegalArgumentException("Company name '" + user.companyName() + "' is already taken.");
         }
-		if (!isPasswordValid(user.password()))
+
+		if (!isPasswordValid(user.password())) {
 			throw new PasswordNotValidException(user.password());
+		}
 
 		String hashedPassword = encoder.encode(user.password());
-		SellerAccount farmer = SellerAccount.of(user);
-		farmer.setHash(hashedPassword);
+		SellerAccount seller = SellerAccount.of(user);
+		seller.setHash(hashedPassword);
+		
+		Point location = geocodingService.getCoordinatesFromAddress(user.companyAddress());
 
-		log.info("Saving new supplier: {}", farmer);
-		farmer = repo.save(farmer);
-		log.info("Supplier saved successfully: {}", farmer.getLogin());
+		if (location != null) {
+			double latitude = location.getY(); 
+			double longitude = location.getX();
+			seller.setCoordinates(longitude, latitude);
+		} else {
+			log.warn("Failed to get valid coordinates for company address: {}", user.companyAddress());
+		}
+		log.info("Saving new seller: {}", seller);
+		
+		seller = repo.save(seller);
+		log.info("Seller saved successfully: {}", seller.getLogin());
 
-		return SellerResponseDto.build(farmer);
+		return SellerResponseDto.build(seller);
 	}
 
 	private boolean isPasswordValid(String password) {
@@ -155,6 +170,17 @@ public class SellerService implements ISellerManagement {
 			farmer.setCompanyName(user.companyName());
 		if (user.companyAddress() != null)
 			farmer.setCompanyAddress(user.companyAddress());
+       
+		Point location = geocodingService.getCoordinatesFromAddress(user.companyAddress());
+
+        if (location != null) {
+            double latitude = location.getY(); 
+            double longitude = location.getX();
+            farmer.setCoordinates(longitude, latitude);
+        } else {
+            log.warn("Failed to get valid coordinates for updated company address: {}", user.companyAddress());
+        }
+  
 		if (user.taxId() != null)
 			farmer.setTaxId(user.taxId());
 		if (user.contactPerson() != null)
