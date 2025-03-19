@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import dailyfarm.accounting.dto.LoginRequestDto;
@@ -23,6 +24,7 @@ import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.dto.customer.CustomerResponseDto;
+import dailyfarm.accounting.dto.seller.SellerWithDistanceDto;
 import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.accounting.service.customer.CustomerService;
 import jakarta.validation.Valid;
@@ -116,9 +118,16 @@ public class CustomerController {
 	public LocalDateTime getActivationDate(@PathVariable String login) {
 		return service.getActivationDate(login);
 	}
-	
-	 @GetMapping("/sellers")
-	    public ResponseEntity<List<SellerAccount>> getAllSellers() {
-	     return service.getAllSellers();
-	    }
+
+	@GetMapping("/sellers")
+	public ResponseEntity<List<SellerAccount>> getAllSellers() {
+		return service.getAllSellers();
+	}
+
+	@GetMapping("/nearest-sellers")
+	@PreAuthorize("#login == authentication.name or hasRole('ADMIN')")
+	public List<SellerWithDistanceDto> getNearestSellers(@RequestParam double radius, @RequestParam String login) {
+		return service.getNearestSellers(login, radius);
+	}
+
 }

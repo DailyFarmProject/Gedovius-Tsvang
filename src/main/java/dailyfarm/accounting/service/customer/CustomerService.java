@@ -1,9 +1,11 @@
 package dailyfarm.accounting.service.customer;
 
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +20,7 @@ import dailyfarm.accounting.dto.RolesResponseDto;
 import dailyfarm.accounting.dto.TokenResponseDto;
 import dailyfarm.accounting.dto.customer.CustomerRequestDto;
 import dailyfarm.accounting.dto.customer.CustomerResponseDto;
+import dailyfarm.accounting.dto.seller.SellerWithDistanceDto;
 import dailyfarm.accounting.entity.customer.CustomerAccount;
 import dailyfarm.accounting.entity.seller.SellerAccount;
 import dailyfarm.accounting.exceptions.AccountActivationException;
@@ -30,6 +33,7 @@ import dailyfarm.accounting.exceptions.UserNotFoundException;
 import dailyfarm.accounting.repository.customer.CustomerRepository;
 import dailyfarm.accounting.repository.seller.SellerRepository;
 import dailyfarm.accounting.security.JwtUtils;
+import dailyfarm.accounting.service.geocoding.GeocodingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,6 +47,7 @@ public class CustomerService implements ICustomerManagement {
 	private final PasswordEncoder encoder;
 	private final JwtUtils jwtUtils;
 	private final AuthenticationManager authManager;
+	private final GeocodingService geocodingService;
 
 	@Value("${password_length:8}")
 	private int passwordLength;
@@ -68,15 +73,25 @@ public class CustomerService implements ICustomerManagement {
 		if (!isPasswordValid(user.password())) {
 			throw new PasswordNotValidException(user.password());
 		}
-
 		String hashedPassword = encoder.encode(user.password());
 		CustomerAccount client = CustomerAccount.of(user);
 		client.setHash(hashedPassword);
 
+		Point location = geocodingService.getCoordinatesFromAddress(client.getAddress());
+		double latitude = 0.0;
+		double longitude = 0.0;
+		if (location != null) {
+			latitude = location.getY();
+			longitude = location.getX();
+			log.info("Received coordinates for address {}: latitude = {}, longitude = {}", client.getAddress(),
+					latitude, longitude);
+		} else {
+			log.warn("Failed to get valid coordinates for address: {}", client.getAddress());
+		}
+		client.setCoordinates(longitude, latitude);
 		log.info("Saving new customer: {}", client);
 		client = customerRepo.save(client);
 		log.info("Customer saved successfully: {}", client.getLogin());
-
 		return CustomerResponseDto.build(client);
 	}
 
@@ -155,6 +170,17 @@ public class CustomerService implements ICustomerManagement {
 			client.setLastName(user.lastName());
 		if (user.address() != null)
 			client.setAddress(user.address());
+		if (user.address() != null) {
+			client.setAddress(user.address());
+			Point location = geocodingService.getCoordinatesFromAddress(user.address());
+			if (location != null) {
+				double latitude = location.getY();
+				double longitude = location.getX();
+				client.setCoordinates(longitude, latitude);
+			} else {
+				log.warn("Failed to get valid coordinates for updated customer address: {}", user.address());
+			}
+		}
 		if (user.phone() != null)
 			client.setPhone(user.phone());
 
@@ -231,9 +257,20 @@ public class CustomerService implements ICustomerManagement {
 		CustomerAccount client = getCustomerAccount(login);
 		return client.isRevoked() ? null : client.getActivationDate();
 	}
-	
+
 	public ResponseEntity<List<SellerAccount>> getAllSellers() {
-		 List<SellerAccount> sellers = sellerRepo.findAll();
-	        return ResponseEntity.ok(sellers);
-	}	
+		List<SellerAccount> sellers = sellerRepo.findAll();
+		return ResponseEntity.ok(sellers);
+	}
+	public List<SellerWithDistanceDto> getNearestSellers(String login, double radius) {
+	    CustomerAccount client = getCustomerAccount(login);
+	    Point location = client.getLocation();
+	    if (location == null) {
+	        throw new IllegalArgumentException("Customer does not have location coordinates.");
+	    }
+
+	    return sellerRepo.findNearestSellers(location.getX(), location.getY(), radius);
+	}
+
+
 }
